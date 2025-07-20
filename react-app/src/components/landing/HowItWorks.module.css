@@ -1,0 +1,40 @@
+.howItWorks {
+  background: #FFFFFF;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+.heading {
+  color: #1E3A5F;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+.steps {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.step {
+  background: #F9FBFD;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  min-width: 220px;
+  max-width: 300px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  margin: 0.5rem 0;
+}
+.stepNumber {
+  background: #A6C6ED;
+  color: #1E3A5F;
+  font-weight: 700;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+  font-size: 1.25rem;
+} 

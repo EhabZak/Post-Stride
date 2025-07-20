@@ -1,0 +1,35 @@
+.testimonials {
+  background: #F9FBFD;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+.heading {
+  color: #1E3A5F;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+.testimonialCards {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.testimonial {
+  background: #FFFFFF;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 1.5rem;
+  flex: 1 1 250px;
+  max-width: 350px;
+  min-width: 250px;
+  margin: 0.5rem 0;
+  color: #2D5D9F;
+}
+.testimonial span {
+  display: block;
+  margin-top: 1rem;
+  color: #A6C6ED;
+  font-size: 0.875rem;
+} 

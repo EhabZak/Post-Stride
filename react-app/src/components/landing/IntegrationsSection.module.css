@@ -1,0 +1,28 @@
+.integrations {
+  background: #FFFFFF;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+.heading {
+  color: #1E3A5F;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+.logosRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.logo {
+  height: 40px;
+  width: auto;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.logo:hover {
+  opacity: 1;
+} 

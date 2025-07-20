@@ -1,0 +1,31 @@
+.hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem 2rem;
+  background: #F9FBFD;
+}
+.headline {
+  font-size: 2.5rem;
+  color: #1E3A5F;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  font-family: 'Inter', sans-serif;
+}
+.subheadline {
+  font-size: 1.25rem;
+  color: #2D5D9F;
+  margin-bottom: 2rem;
+}
+.cta {
+  background: #F7941D;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cta:hover {
+  background: #2D5D9F;
+} 

@@ -1,0 +1,132 @@
+.pricing {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+.heading {
+  color: #1E3A5F;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+.pricingToggle {
+  margin-bottom: 2rem;
+}
+.toggleBtn {
+  background: #FFFFFF;
+  color: #2D5D9F;
+  border: 2px solid #2D5D9F;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  margin: 0 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.active {
+  background: #A6C6ED;
+  color: #1E3A5F;
+  border: 2px solid #2D5D9F;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  margin: 0 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.pricingCards {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.pricingCard {
+  background: #FFFFFF;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 2rem 1.5rem;
+  flex: 1 1 250px;
+  max-width: 350px;
+  min-width: 250px;
+  margin: 0.5rem 0;
+  color: #2D5D9F;
+}
+.price {
+  font-size: 2rem;
+  color: #F7941D;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+.chooseBtn {
+  background: #2D5D9F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background 0.2s;
+}
+.chooseBtn:hover {
+  background: #1E3A5F;
+}
+.segmentedToggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 2rem;
+  background: #F9FBFD;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+.segmentedBtn {
+  border: none;
+  background: transparent;
+  color: #2D5D9F;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.75rem 2.25rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+  border-radius: 0;
+}
+.segmentedBtn:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+.segmentedBtn:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+.segmentedBtn:hover {
+  background: #A6C6ED;
+  color: #1E3A5F;
+}
+.segmentedActive {
+  background: #2D5D9F;
+  color: #FFFFFF;
+  font-weight: 700;
+  border: none;
+  padding: 0.75rem 2.25rem;
+  cursor: pointer;
+  font-size: 1rem;
+  outline: none;
+  border-radius: 0;
+}
+.segmentedActive:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+.segmentedActive:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+} 

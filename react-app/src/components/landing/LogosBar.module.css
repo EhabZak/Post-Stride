@@ -1,0 +1,17 @@
+.logosBar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.5rem 0;
+  background: #FFFFFF;
+}
+.logo {
+  height: 40px;
+  width: auto;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.logo:hover {
+  opacity: 1;
+} 
