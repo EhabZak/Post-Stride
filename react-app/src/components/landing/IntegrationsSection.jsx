@@ -1,11 +1,12 @@
 import styles from './IntegrationsSection.module.css';
 
 const integrations = [
-  { name: 'Instagram', src: '/assets/logos/instagram.svg' },
-  { name: 'TikTok', src: '/assets/logos/tiktok.svg' },
-  { name: 'Twitter', src: '/assets/logos/twitter.svg' },
-  { name: 'Facebook', src: '/assets/logos/facebook.svg' },
-  { name: 'LinkedIn', src: '/assets/logos/linkedin.svg' }
+  { name: 'Instagram', src: '/icons/instagram.svg' },
+  { name: 'TikTok', src: '/icons/tiktok.svg' },
+  { name: 'x', src: '/icons/x.svg' },
+  { name: 'Facebook', src: '/icons/facebook.svg' },
+  { name: 'LinkedIn', src: '/icons/linkedin.svg' },
+  { name: 'BlueSky', src: '/icons/bluesky.svg' },
 ];
 
 const IntegrationsSection = () => (

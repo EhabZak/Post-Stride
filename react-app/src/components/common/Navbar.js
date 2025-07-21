@@ -1,0 +1,1 @@
+// This file is a plain HTML/CSS/JS version for reference. For the React version, use Navbar.jsx and Navbar.module.css. 
