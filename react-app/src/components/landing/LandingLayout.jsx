@@ -6,7 +6,7 @@ import IntegrationsSection from './IntegrationsSection';
 import TestimonialsSection from './TestimonialsSection';
 import PricingSection from './PricingSection';
 import CtaBanner from './CtaBanner';
-
+import Footer from '../common/Footer';
 const LandingLayout = () => (
   <>
     <Hero />
@@ -17,6 +17,7 @@ const LandingLayout = () => (
     <TestimonialsSection />
     <PricingSection />
     <CtaBanner />
+    <Footer />
   </>
 );
 

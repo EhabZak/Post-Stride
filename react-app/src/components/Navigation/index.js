@@ -21,28 +21,33 @@ function Navigation({ isLoaded }) {
 
   return (
     <nav className="navbar">
-      <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+      {/* <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
         <span className="bar"></span>
         <span className="bar"></span>
         <span className="bar"></span>
-      </button>
-      <ul className={menuOpen ? 'menuOpen' : 'linksWrapper'}>
+      </button> */}
+      {/* <ul className={menuOpen ? 'menuOpen' : 'linksWrapper'}> */}
         <li>
           <NavLink exact to="/">
             <img id="logo-image" src={logo} alt="Logo" />
           </NavLink>
+		  
         </li>
         {navLinks.map(link => (
           <li key={link.label}>
             <a href={link.href} className="link">{link.label}</a>
           </li>
         ))}
+
+
         {isLoaded && (
           <li>
             <ProfileButton user={sessionUser} />
           </li>
         )}
-      </ul>
+
+		
+      {/* </ul> */}
     </nav>
   );
 }
