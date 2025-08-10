@@ -10,24 +10,35 @@ function ProfileButton({ user }) {
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   const ulRef = useRef();
+  const wrapperRef = useRef();
 
   const openMenu = () => {
     if (showMenu) return;
     setShowMenu(true);
   };
 
+  const closeMenu = () => setShowMenu(false);
+
+  const handleMouseEnter = () => {
+    setShowMenu(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowMenu(false);
+  };
+
   useEffect(() => {
     if (!showMenu) return;
 
-    const closeMenu = (e) => {
+    const closeMenuOnClick = (e) => {
       if (!ulRef.current.contains(e.target)) {
         setShowMenu(false);
       }
     };
 
-    document.addEventListener("click", closeMenu);
+    document.addEventListener("click", closeMenuOnClick);
 
-    return () => document.removeEventListener("click", closeMenu);
+    return () => document.removeEventListener("click", closeMenuOnClick);
   }, [showMenu]);
 
   const handleLogout = (e) => {
@@ -36,11 +47,15 @@ function ProfileButton({ user }) {
   };
 
   const ulClassName = "profile-dropdown" + (showMenu ? "" : " hidden");
-  const closeMenu = () => setShowMenu(false);
 
   return (
     <>
-    <div className="profile-menu-wrapper">
+    <div 
+      className="profile-menu-wrapper" 
+      ref={wrapperRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <button onClick={openMenu}>
         {/* <i className="fas fa-user-circle" /> */}
         <h1 className='tezi'>Get Started</h1>
