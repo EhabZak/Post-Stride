@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import ProfileButton from './ProfileButton';
 import logo from '../../assets/logos/post-logo.png';
-import './Navigation.css';
+
 
 const navLinks = [
   { label: 'Pricing', href: '#pricing' },
@@ -21,6 +21,7 @@ function Navigation({ isLoaded }) {
 
   return (
     <nav className="navbar">
+      
       {/* <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
         <span className="bar"></span>
         <span className="bar"></span>

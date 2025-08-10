@@ -2,11 +2,12 @@
   background: #2D5D9F;
   color: #FFFFFF;
   text-align: center;
-  padding: 15.2rem 2rem; /* Increased by 40% from 3rem */
+  padding: 4.2rem 2rem; /* Increased by 40% from 3rem */
   border-radius: 0; /* Remove border radius for full width */
   margin: 3rem 0 0 0; /* Remove horizontal margins */
-  max-width: 100%; /* Full width */
-  width: 100vw; /* Full viewport width */
+  max-width: 1200px;
+  margin: 3rem auto 0 auto;
+  width: 100%;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 .headline {

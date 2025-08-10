@@ -4,6 +4,7 @@ import { logout } from "../../store/session";
 import OpenModalButton from "../OpenModalButton";
 import LoginFormModal from "../LoginFormModal";
 import SignupFormModal from "../SignupFormModal";
+import "./Navigation.css";
 
 function ProfileButton({ user }) {
   const dispatch = useDispatch();
@@ -39,8 +40,11 @@ function ProfileButton({ user }) {
 
   return (
     <>
+    <div className="profile-menu-wrapper">
       <button onClick={openMenu}>
         <i className="fas fa-user-circle" />
+        <h1 className='tezi'>Get Started</h1>
+        
       </button>
       <ul className={ulClassName} ref={ulRef}>
         {user ? (
@@ -57,16 +61,21 @@ function ProfileButton({ user }) {
               buttonText="Log In"
               onItemClick={closeMenu}
               modalComponent={<LoginFormModal />}
+              className="LogIn"
             />
 
             <OpenModalButton
-              buttonText="Sign Up"
+              buttonText="Free Trial"
               onItemClick={closeMenu}
               modalComponent={<SignupFormModal />}
+              className="getStarted"
             />
           </>
+          
         )}
+       
       </ul>
+      </div>
     </>
   );
 }
