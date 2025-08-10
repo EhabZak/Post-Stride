@@ -164,24 +164,7 @@
   margin: 0; */
 }
 
-/* .tezi {
-  color: green;
-  font-size: 2rem;
-  font-weight: 700;
-  margin-left: 2rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  margin-right: 2rem;
-  text-align: center;
-  text-decoration: none;
-};
 
-#tezi {
-  font-size: 2rem;
-  color:red;
-  text-align: center;
-  margin-bottom: 1rem;
-} */
 
 .profile-menu-wrapper {
   position: relative;
@@ -191,16 +174,107 @@
 .profile-dropdown {
   position: absolute;
   right: 0;
+  top: 100%;
   margin-top: 8px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  /* background: rgba(55, 65, 81, 0.8); */
+  background: rgba(188, 191, 196, 0.8);
+  /* border: none; */
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
   z-index: 1000;
+  width: 220px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
 }
 
 /* this is the key bit you’re missing */
 .hidden {
   display: none !important;
 }
+
+/* Style the Get Started button to match landing page buttons */
+.profile-menu-wrapper button {
+  background: #F7941D;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.profile-menu-wrapper button:hover {
+  background: #1E3A5F;
+}
+
+/* Style the dropdown menu options */
+.profile-dropdown button {
+  background: transparent;
+  color: #374151;
+  /* color: white; */
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  padding: 0.875rem 1.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: bolder;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin: 0;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.profile-dropdown button:hover {
+  /* background: #F3F4F6; */
+  background: rgba(188, 191, 196, 0.8);
+  background:rgb(69, 90, 117);
+  background: #1E3A5F;
+  color:rgb(226, 229, 235);
+  border-radius: 0.5rem;
+  /* border-left-color: #2D5D9F; */
+}
+
+.profile-dropdown button:focus {
+  background: #F3F4F6;
+  color: #1F2937;
+  border-left-color: #2D5D9F;
+  outline: none;
+}
+
+.profile-dropdown li {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  .profile-dropdown {
+    right: 0;
+    left: auto;
+    min-width: 180px;
+    margin-top: 4px;
+  }
+  
+  .profile-dropdown button {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+  }
+  
+  .profile-menu-wrapper button {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.75rem;
+  }
+}
+

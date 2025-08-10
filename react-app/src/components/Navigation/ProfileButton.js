@@ -42,8 +42,14 @@ function ProfileButton({ user }) {
     <>
     <div className="profile-menu-wrapper">
       <button onClick={openMenu}>
-        <i className="fas fa-user-circle" />
+        {/* <i className="fas fa-user-circle" /> */}
         <h1 className='tezi'>Get Started</h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8"  cy="8"  r="2.5"/>
+    <circle cx="16" cy="8"  r="2.5"/>
+    <circle cx="8"  cy="16" r="2.5"/>
+    <circle cx="16" cy="16" r="2.5"/>
+  </svg>
         
       </button>
       <ul className={ulClassName} ref={ulRef}>
