@@ -1,0 +1,209 @@
+.comparisonSection {
+  padding: 5rem 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.mainHeading {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1E3A5F;
+  text-align: center;
+  margin-bottom: 3rem;
+  line-height: 1.2;
+}
+
+.sectionHeading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2D5D9F;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* Problem Section */
+.problemSection {
+  margin-bottom: 5rem;
+}
+
+.painPointsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.painPointCard {
+  background: #FFFFFF;
+  border: 2px solid #FEE2E2;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.painPointCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeadline {
+  font-size: 1.25rem;
+  font-weight: 700;
+  /* color: #DC2626; */
+  color: #6B7280;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.cardContent {
+  font-size: 1rem;
+  color: #6B7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.problemSummary {
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  /* color: #1E3A5F; */
+  color: #FFFFFF;
+  margin: 0;
+  padding: 1.5rem;
+  
+  background: rgba(188, 191, 196, 0.8);
+  background: #F7941D;
+  border-radius: 12px;
+  /* border: 1px solid rgba(220, 38, 38, 0.2); */
+}
+
+/* Solution Section */
+.solutionSection {
+  margin-top: 4rem;
+}
+
+.solutionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.solutionCard {
+  background: #FFFFFF;
+  border: 2px solid #D1FAE5;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.solutionCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.solutionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  /* color: #059669; */
+  color: #2D5D9F;
+  
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.solutionDescription {
+  font-size: 1rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .comparisonSection {
+    padding: 3rem 0;
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .mainHeading {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .sectionHeading {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .painPointsGrid,
+  .solutionsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .painPointCard,
+  .solutionCard {
+    padding: 1.5rem;
+  }
+  
+  .cardHeadline,
+  .solutionTitle {
+    font-size: 1.125rem;
+  }
+  
+  .problemSummary {
+    font-size: 1rem;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainHeading {
+    font-size: 1.75rem;
+  }
+  
+  .painPointCard,
+  .solutionCard {
+    padding: 1.25rem;
+  }
+}
+
+.painPointHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.xIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solutionHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.checkmarkIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

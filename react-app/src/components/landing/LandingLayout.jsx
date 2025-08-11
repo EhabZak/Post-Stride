@@ -1,6 +1,7 @@
 import Hero from './Hero';
 import LogosBar from './LogosBar';
 import FeaturesSection from './FeaturesSection';
+import ComparisonSection from './ComparisonSection';
 import HowItWorks from './HowItWorks';
 import IntegrationsSection from './IntegrationsSection';
 import TestimonialsSection from './TestimonialsSection';
@@ -15,6 +16,7 @@ const LandingLayout = () => (
     <div id="features">
       <FeaturesSection />
     </div>
+    <ComparisonSection />
     <HowItWorks />
     <div id="platforms">
       <IntegrationsSection />
