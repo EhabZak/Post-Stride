@@ -58,7 +58,10 @@
   text-decoration: none;
   text-transform: none;
   transition: color 0.2s;
-  
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
 }
 .link:hover {
   color: #6B7280;
@@ -237,20 +240,20 @@
 
 .profile-dropdown button:hover {
   /* background: #F3F4F6; */
-  background: rgba(188, 191, 196, 0.8);
-  background:rgb(69, 90, 117);
-  background: #1E3A5F;
+  /* background: rgba(188, 191, 196, 0.8); */
+  /* background:rgb(69, 90, 117); */
+  /* background: #1E3A5F; */
   color:rgb(226, 229, 235);
   border-radius: 0.5rem;
   /* border-left-color: #2D5D9F; */
 }
 
-.profile-dropdown button:focus {
+/* .profile-dropdown button:focus {
   background: #F3F4F6;
   color: #1F2937;
   border-left-color: #2D5D9F;
   outline: none;
-}
+} */
 
 .profile-dropdown li {
   padding: 0;

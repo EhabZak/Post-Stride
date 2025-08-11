@@ -5,17 +5,29 @@ import HowItWorks from './HowItWorks';
 import IntegrationsSection from './IntegrationsSection';
 import TestimonialsSection from './TestimonialsSection';
 import PricingSection from './PricingSection';
+import FAQSection from './FAQSection';
 import CtaBanner from './CtaBanner';
 import Footer from '../common/Footer';
 const LandingLayout = () => (
   <>
     <Hero />
     <LogosBar />
-    <FeaturesSection />
+    <div id="features">
+      <FeaturesSection />
+    </div>
     <HowItWorks />
-    <IntegrationsSection />
-    <TestimonialsSection />
-    <PricingSection />
+    <div id="platforms">
+      <IntegrationsSection />
+    </div>
+    <div id="reviews">
+      <TestimonialsSection />
+    </div>
+    <div id="pricing">
+      <PricingSection />
+    </div>
+    <div id="faq">
+      <FAQSection />
+    </div>
     <CtaBanner />
     <Footer />
   </>

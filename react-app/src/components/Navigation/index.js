@@ -19,6 +19,16 @@ function Navigation({ isLoaded }) {
   const sessionUser = useSelector(state => state.session.user);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   return (
     <nav className="navbar">
       
@@ -36,7 +46,12 @@ function Navigation({ isLoaded }) {
         </li>
         {navLinks.map(link => (
           <li key={link.label}>
-            <a href={link.href} className="link">{link.label}</a>
+            <button 
+              onClick={() => scrollToSection(link.href.replace('#', ''))} 
+              className="link"
+            >
+              {link.label}
+            </button>
           </li>
         ))}
 
