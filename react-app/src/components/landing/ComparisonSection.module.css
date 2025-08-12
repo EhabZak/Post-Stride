@@ -40,7 +40,8 @@
 
 .painPointCard {
   background: #FFFFFF;
-  border: 2px solid #FEE2E2;
+  /* border: 2px solid #FEE2E2; */
+  border: 2px solid rgba(207, 213, 224, 0.8);
   border-radius: 16px;
   padding: 2rem;
   text-align: center;
@@ -97,7 +98,9 @@
 
 .solutionCard {
   background: #FFFFFF;
-  border: 2px solid #D1FAE5;
+  /* border: 2px solid #D1FAE5; */
+  /* border: 2px solid #1E3A5F; */
+  border: 2px solid rgba(207, 213, 224, 0.8);
   border-radius: 16px;
   padding: 2rem;
   text-align: center;
