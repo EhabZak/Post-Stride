@@ -16,7 +16,8 @@
   margin-bottom: 2rem;
 }
 .cta {
-  background: #F7941D;
+  /* background: #F7941D; */
+  background: #1E3A5F;
   color: #FFFFFF;
   border: none;
   border-radius: 0.5rem;
@@ -27,5 +28,6 @@
   transition: background 0.2s;
 }
 .cta:hover {
-  background: #2D5D9F;
+  /* background: #2D5D9F; */
+  background: #F7941D
 } 
