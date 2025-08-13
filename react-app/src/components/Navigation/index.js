@@ -31,39 +31,31 @@ function Navigation({ isLoaded }) {
 
   return (
     <nav className="navbar">
-      
-      {/* <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-        <span className="bar"></span>
-        <span className="bar"></span>
-        <span className="bar"></span>
-      </button> */}
-      {/* <ul className={menuOpen ? 'menuOpen' : 'linksWrapper'}> */}
-        <li>
+      <div className="nav-container">
+        <div className="nav-logo">
           <NavLink exact to="/">
             <img id="logo-image" src={logo} alt="Logo" />
           </NavLink>
-		  
-        </li>
-        {navLinks.map(link => (
-          <li key={link.label}>
+        </div>
+        
+        <div className="nav-links">
+          {navLinks.map(link => (
             <button 
+              key={link.label}
               onClick={() => scrollToSection(link.href.replace('#', ''))} 
               className="link"
             >
               {link.label}
             </button>
-          </li>
-        ))}
+          ))}
+        </div>
 
-
-        {isLoaded && (
-          <li>
+        <div className="nav-auth">
+          {isLoaded && (
             <ProfileButton user={sessionUser} />
-          </li>
-        )}
-
-		
-      {/* </ul> */}
+          )}
+        </div>
+      </div>
     </nav>
   );
 }
