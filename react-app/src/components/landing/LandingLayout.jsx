@@ -30,8 +30,12 @@ const LandingLayout = () => (
     <div id="faq">
       <FAQSection />
     </div>
+    <div id="cta">
     <CtaBanner />
+    </div>
+    <div id="footer">
     <Footer />
+    </div>
   </>
 );
 

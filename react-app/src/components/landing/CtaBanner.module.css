@@ -1,32 +1,138 @@
 .ctaBanner {
+  
   background: #2D5D9F;
   color: #FFFFFF;
-  text-align: center;
-  padding: 4.2rem 2rem; /* Increased by 40% from 3rem */
-  border-radius: 0; /* Remove border radius for full width */
-  margin: 3rem 0 0 0; /* Remove horizontal margins */
-  max-width: 1200px;
-  margin: 3rem auto 0 auto;
+  padding: 4rem 2rem;
+  position: relative;
+  overflow: hidden;
+  max-width: 1200px; /* Set max-width like other components */
+  margin: 0 auto; /* Center the banner on the page */
+  /* border-radius: 1rem; Optional: add rounded corners */
+}
+
+.ctaBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
   width: 100%;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  height: 100%;
+  background: 
+    linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0.03) 70%, transparent 70%),
+    linear-gradient(-45deg, transparent 30%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.02) 70%, transparent 70%);
+  background-size: 60px 60px, 40px 40px;
+  pointer-events: none;
+  
 }
+
+.ctaContainer {
+  position: relative;
+  z-index: 1;
+}
+
+.ctaContent {
+  display: flex;
+  align-items: center;
+  
+}
+
+.ctaLeft {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* background-color:rgb(95, 85, 30); */
+  
+}
+
+.ctaLogo {
+  max-width: 300px;
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(255,255,255,0.1));
+  transition: transform 0.3s ease;
+}
+
+.ctaLogo:hover {
+  transform: scale(1.05);
+}
+
+.ctaRight {
+  /* flex: 1; */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
 .headline {
-  font-size: 2.5rem;
+  font-size: 4.5rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
   font-family: 'Inter', sans-serif;
+  line-height: 1.1;
+  color: #FFFFFF;
+  margin: 0;
 }
+
 .ctaBtn {
-  background: #F7941D;
+  
+  background: #1E3A5F;
   color: #FFFFFF;
   border: none;
   border-radius: 0.5rem;
   padding: 0.75rem 1.5rem;
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
+  margin-top: 1rem;
   transition: background 0.2s;
+  width: 50%;
+  margin-top: auto;
 }
+
 .ctaBtn:hover {
-  background: #1E3A5F;
+  
+  background: #F7941D;
+  
+}
+
+.downloadIcon {
+  width: 20px;
+  height: 20px;
+  color: #6B7280;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .ctaContent {
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+  }
+  
+  .ctaRight {
+    align-items: center;
+  }
+  
+  .headline {
+    font-size: 2.5rem;
+  }
+  
+  .ctaLogo {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headline {
+    font-size: 2rem;
+  }
+  
+  .ctaBtn {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .ctaLogo {
+    max-width: 150px;
+  }
 } 
