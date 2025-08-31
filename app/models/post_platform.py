@@ -1,5 +1,4 @@
 from .db import db, environment, SCHEMA, add_prefix_for_prod
-import uuid
 from datetime import datetime
 
 
@@ -9,9 +8,9 @@ class PostPlatform(db.Model):
     if environment == "production":
         __table_args__ = {'schema': SCHEMA}
 
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    post_id = db.Column(db.String(36), db.ForeignKey(add_prefix_for_prod('posts.id')), nullable=False)
-    platform_id = db.Column(db.String(36), db.ForeignKey(add_prefix_for_prod('social_platforms.id')), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('posts.id')), nullable=False)
+    platform_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('social_platforms.id')), nullable=False)
     platform_caption = db.Column(db.Text)
     media_urls = db.Column(db.JSON)  # [{url, type, alt, poster}]
     platform_post_id = db.Column(db.String(255))  # returned id from the platform

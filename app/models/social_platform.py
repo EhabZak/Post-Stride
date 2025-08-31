@@ -1,5 +1,4 @@
 from .db import db, environment, SCHEMA, add_prefix_for_prod
-import uuid
 from datetime import datetime
 
 
@@ -9,7 +8,7 @@ class SocialPlatform(db.Model):
     if environment == "production":
         __table_args__ = {'schema': SCHEMA}
 
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     api_base_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

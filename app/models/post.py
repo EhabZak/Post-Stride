@@ -1,5 +1,4 @@
 from .db import db, environment, SCHEMA, add_prefix_for_prod
-import uuid
 from datetime import datetime
 
 
@@ -9,8 +8,8 @@ class Post(db.Model):
     if environment == "production":
         __table_args__ = {'schema': SCHEMA}
 
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey(add_prefix_for_prod('users.id')), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('users.id')), nullable=False)
     caption = db.Column(db.Text)
     scheduled_time = db.Column(db.DateTime)
     status = db.Column(db.String(50), nullable=False)  # draft|scheduled|publishing|published|partially_published|failed|canceled

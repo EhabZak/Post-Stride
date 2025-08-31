@@ -8,8 +8,8 @@ class PostMedia(db.Model):
     if environment == "production":
         __table_args__ = {'schema': SCHEMA}
 
-    post_id = db.Column(db.String(36), db.ForeignKey(add_prefix_for_prod('posts.id')), primary_key=True)
-    media_id = db.Column(db.String(36), db.ForeignKey(add_prefix_for_prod('media.id')), primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('posts.id')), primary_key=True)
+    media_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('media.id')), primary_key=True)
     sort_order = db.Column(db.Integer)  # optional ordering for composer/publisher
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
 
