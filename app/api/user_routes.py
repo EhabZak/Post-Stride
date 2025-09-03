@@ -23,3 +23,19 @@ def user(id):
     """
     user = User.query.get(id)
     return user.to_dict()
+
+
+    """ 
+    users_routes.py (users)
+
+    GET /api/users (admin) – list; filters: email, created_from, created_to.
+
+    POST /api/users – sign-up/create.
+
+    GET /api/users/:id – fetch one.
+
+    PATCH /api/users/:id – update name/email/password.
+
+    DELETE /api/users/:id – delete (admin or self with checks).
+    
+    """
