@@ -26,6 +26,7 @@ from datetime import datetime
 
 posts_routes = Blueprint('posts', __name__)
 
+#! Get all posts ///////////////////////////////////////////////////////////////////////////
 
 @posts_routes.route('', methods=['GET'])
 @login_required
@@ -36,7 +37,7 @@ def get_posts():
 
     # return jsonify({'message': 'Hello, World!'}), 200
     try:
-        # Get query parameters
+        # Get query parameters /////////////////////////////////////
         status = request.args.get('status')
         from_date = request.args.get('from')
         to_date = request.args.get('to')
@@ -45,10 +46,10 @@ def get_posts():
         q = request.args.get('q')  # caption search
         sort_by = request.args.get('sort', 'created_at')  # default sort by created_at
         
-        # Start with base query for current user
+        # Start with base query for current user /////////////////////////////////////
         query = Post.query.filter_by(user_id=current_user.id)
         
-        # Apply filters
+        # Apply filters /////////////////////////////////////
         if status:
             query = query.filter(Post.status == status)
         
@@ -82,7 +83,7 @@ def get_posts():
         if q:
             query = query.filter(Post.caption.ilike(f'%{q}%'))
         
-        # Apply sorting
+        # Apply sorting /////////////////////////////////////
         if sort_by == 'scheduled_time':
             query = query.order_by(Post.scheduled_time.asc())
         elif sort_by == 'created_at':
@@ -92,15 +93,15 @@ def get_posts():
         else:
             return jsonify({'error': 'Invalid sort parameter. Use: scheduled_time, created_at, or status.'}), 400
         
-        # Execute query
+        # Execute query /////////////////////////////////////
         posts = query.all()
         
-        # Convert to dictionary format
+        # Convert to dictionary format /////////////////////////////////////
         posts_data = []
         for post in posts:
             post_data = post.to_dict()
             
-            # Add platform information
+            # Add platform information /////////////////////////////////////
             post_data['platforms'] = []
             for post_platform in post.post_platforms:
                 platform_data = {
@@ -111,7 +112,7 @@ def get_posts():
                 }
                 post_data['platforms'].append(platform_data)
             
-            # Add media information
+            # Add media information /////////////////////////////////////
             post_data['media'] = []
             for post_media in post.post_media:
                 media_data = {
@@ -130,6 +131,7 @@ def get_posts():
         return jsonify({'error': str(e)}), 500
 
 #! Create a post ///////////////////////////////////////////////////////////////////////////
+
 @posts_routes.route('', methods=['POST'])
 @login_required
 def create_post():
@@ -139,7 +141,7 @@ def create_post():
     try:
         data = request.get_json()
         
-        # Validate required fields
+        # Validate required fields /////////////////////////////////////
         if not data or 'caption' not in data:
             return jsonify({'error': 'Caption is required'}), 400
         
@@ -147,19 +149,19 @@ def create_post():
         scheduled_time = data.get('scheduled_time')
         status = data.get('status', 'draft')  # default to draft
         
-        # Validate status
+        # Validate status /////////////////////////////////////
         valid_statuses = ['draft', 'scheduled', 'publishing', 'published', 'partially_published', 'failed', 'canceled']
         if status not in valid_statuses:
             return jsonify({'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
         
-        # Parse scheduled_time if provided
+        # Parse scheduled_time if provided /////////////////////////////////////
         if scheduled_time:
             try:
                 scheduled_time = datetime.fromisoformat(scheduled_time)
             except ValueError:
                 return jsonify({'error': 'Invalid scheduled_time format. Use ISO format.'}), 400
         
-        # Create new post
+        # Create new post /////////////////////////////////////
         new_post = Post(
             user_id=current_user.id,
             caption=caption,
@@ -170,7 +172,7 @@ def create_post():
         db.session.add(new_post)
         db.session.commit()
         
-        # Return created post
+        # Return created post /////////////////////////////////////
         post_data = new_post.to_dict()
         return jsonify({'post': post_data}), 201
         
@@ -178,6 +180,7 @@ def create_post():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+#! Get a post by id ///////////////////////////////////////////////////////////////////////////
 
 @posts_routes.route('/<int:post_id>', methods=['GET'])
 @login_required
@@ -186,16 +189,16 @@ def get_post(post_id):
     GET /api/posts/:id – fetch one post with media and platform details
     """
     try:
-        # Find post belonging to current user
+        # Find post belonging to current user /////////////////////////////////////
         post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
         
         if not post:
             return jsonify({'error': 'Post not found'}), 404
         
-        # Get post data
+        # Get post data /////////////////////////////////////
         post_data = post.to_dict()
         
-        # Add detailed platform information
+        # Add detailed platform information /////////////////////////////////////
         post_data['platforms'] = []
         for post_platform in post.post_platforms:
             platform_data = {
@@ -210,7 +213,7 @@ def get_post(post_id):
             }
             post_data['platforms'].append(platform_data)
         
-        # Add detailed media information
+        # Add detailed media information /////////////////////////////////////
         post_data['media'] = []
         for post_media in post.post_media:
             media_data = {
