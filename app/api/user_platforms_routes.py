@@ -1,40 +1,4 @@
-"""
-user_platforms_routes.py (user_platforms)
 
-GET /api/user-platforms – list current user's connections; filters: platform_id, expires_before, status=active|expired.
-
-POST /api/user-platforms – connect/create (stores platform_user_id, tokens, expiry).
-
-GET /api/user-platforms/:id – fetch one (ownership).
-
-PATCH /api/user-platforms/:id – rotate tokens/update info.
-
-DELETE /api/user-platforms/:id – disconnect.
-
-POST /api/user-platforms/:id/refresh-token – force refresh.
-
-GET /api/user-platforms/check-duplicates – pre-create uniqueness check.
-
-"""
-''' 
-Also I need to do 
-Security notes:
-
-1-Encrypt access_token and refresh_token at rest (e.g., app-level AES-GCM with a KMS-managed key).
-
-2-Never log raw tokens; mask to first/last 4 chars.
-
-3-Store client secrets in env/secret manager, not the DB.
-
-4-Add short timeouts + retries with jitter to avoid thundering herd near expiry.
-
-5-Failure/Recovery behavior (UX)
-
-6-If refresh fails: set needs_reconnect=true; show inline banner on the dashboard connection card: “Session expired—Reconnect.”
-
-Allow a one-click OAuth re-connect to rebuild tokens without deleting the connection row.
-
-'''
 
 
 from flask import Blueprint, request, jsonify
@@ -435,3 +399,42 @@ def check_duplicates():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+"""
+user_platforms_routes.py (user_platforms)
+
+GET /api/user-platforms – list current user's connections; filters: platform_id, expires_before, status=active|expired. ok
+
+POST /api/user-platforms – connect/create (stores platform_user_id, tokens, expiry). ok
+
+GET /api/user-platforms/:id – fetch one (ownership). ok
+
+PATCH /api/user-platforms/:id – rotate tokens/update info. ok
+
+DELETE /api/user-platforms/:id – disconnect. ok
+
+POST /api/user-platforms/:id/refresh-token – force refresh. ok
+
+GET /api/user-platforms/check-duplicates – pre-create uniqueness check. ok
+
+"""
+''' 
+Also I need to do 
+Security notes:
+
+1-Encrypt access_token and refresh_token at rest (e.g., app-level AES-GCM with a KMS-managed key). ok
+
+2-Never log raw tokens; mask to first/last 4 chars. ok
+
+3-Store client secrets in env/secret manager, not the DB. ok
+
+4-Add short timeouts + retries with jitter to avoid thundering herd near expiry. 
+
+5-Failure/Recovery behavior (UX) 
+
+6-If refresh fails: set needs_reconnect=true; show inline banner on the dashboard connection card: “Session expired—Reconnect.”
+
+Allow a one-click OAuth re-connect to rebuild tokens without deleting the connection row.
+
+'''

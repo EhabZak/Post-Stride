@@ -1,24 +1,3 @@
-"""
-posts_routes.py (posts) 
-
-GET /api/posts – list; filters: status, from/to (scheduled_time), platform_id, has_media, q (caption); sort by scheduled_time|created_at|status. ok
-
-POST /api/posts – create (caption, optional scheduled_time, status=draft|scheduled). ok
-
-GET /api/posts/:id – fetch one (may include media + per-platform). ok
-
-PATCH /api/posts/:id – update caption/scheduled_time/status. ok
-
-DELETE /api/posts/:id – delete (cascade post_platforms & post_media). ok
-
-POST /api/posts/:id/schedule – set scheduled_time, status=scheduled.
-
-POST /api/posts/:id/cancel – set status=canceled. ok
-
-POST /api/posts/:id/duplicate – clone post (clear per-platform ids/statuses). ok
-
-"""
-
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app.models import db, Post, PostPlatform, PostMedia, Media, SocialPlatform
@@ -483,3 +462,24 @@ def duplicate_post(post_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+"""
+posts_routes.py (posts) 
+
+GET /api/posts – list; filters: status, from/to (scheduled_time), platform_id, has_media, q (caption); sort by scheduled_time|created_at|status. ok
+
+POST /api/posts – create (caption, optional scheduled_time, status=draft|scheduled). ok
+
+GET /api/posts/:id – fetch one (may include media + per-platform). ok
+
+PATCH /api/posts/:id – update caption/scheduled_time/status. ok
+
+DELETE /api/posts/:id – delete (cascade post_platforms & post_media). ok
+
+POST /api/posts/:id/schedule – set scheduled_time, status=scheduled.
+
+POST /api/posts/:id/cancel – set status=canceled. ok
+
+POST /api/posts/:id/duplicate – clone post (clear per-platform ids/statuses). ok
+
+"""

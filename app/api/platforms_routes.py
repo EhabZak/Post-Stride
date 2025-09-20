@@ -1,18 +1,3 @@
-"""
-platforms_routes.py (social_platforms) 
-
-GET /api/platforms – list; optional q (name), sort. ok
-
-GET /api/platforms/:id – fetch one. ok
-
-(admin) POST /api/platforms – create. ok
-
-(admin) PATCH /api/platforms/:id – update. ok
-
-(admin) DELETE /api/platforms/:id – delete. ok
-
-"""
-
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app.models import db, SocialPlatform
@@ -216,3 +201,18 @@ def delete_platform(platform_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+"""
+platforms_routes.py (social_platforms) 
+
+GET /api/platforms – list; optional q (name), sort. ok
+
+GET /api/platforms/:id – fetch one. ok
+
+(admin) POST /api/platforms – create. ok
+
+(admin) PATCH /api/platforms/:id – update. ok
+
+(admin) DELETE /api/platforms/:id – delete. ok
+
+"""
