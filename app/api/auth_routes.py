@@ -27,7 +27,7 @@ def authenticate():
         return current_user.to_dict()
     return {'errors': ['Unauthorized']}
 
-
+#! Login ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/login', methods=['POST'])
 def login():
     """
@@ -44,7 +44,7 @@ def login():
         return user.to_dict()
     return {'errors': validation_errors_to_error_messages(form.errors)}, 401
 
-
+#! Logout ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/logout')
 def logout():
     """
@@ -53,7 +53,7 @@ def logout():
     logout_user()
     return {'message': 'User logged out'}
 
-
+#! Signup ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/signup', methods=['POST'])
 def sign_up():
     """
@@ -73,7 +73,7 @@ def sign_up():
         return user.to_dict()
     return {'errors': validation_errors_to_error_messages(form.errors)}, 401
 
-
+#! Unauthorized ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/unauthorized')
 def unauthorized():
     """
@@ -83,13 +83,12 @@ def unauthorized():
 
 
     """
-    auth_routes.py
+    auth_routes.py this is just the file name 
 
-POST /api/auth/login – email+password → tokens/session.
+POST /api/auth/login – email+password → tokens/session. ok
+POST /api/auth/logout – invalidate token/session. ok 
 
-POST /api/auth/refresh – rotate access token.
 
-POST /api/auth/logout – invalidate token/session.
-
-GET /api/auth/me – current user profile.
+POST /api/auth/refresh – rotate access token. What is this for to update? what rotate access token? 
+GET /api/auth/me – current user profile. I don't know what is this 
     """
