@@ -27,6 +27,16 @@ def authenticate():
         return current_user.to_dict()
     return {'errors': ['Unauthorized']}
 
+#! Current User Profile ///////////////////////////////////////////////////////////////////////////
+@auth_routes.route('/me')
+@login_required
+def get_current_user():
+    """
+    GET /api/auth/me – current user profile
+    Returns the profile information of the currently authenticated user
+    """
+    return jsonify({'user': current_user.to_dict()})
+
 #! Login ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/login', methods=['POST'])
 def login():
@@ -82,13 +92,10 @@ def unauthorized():
     return {'errors': ['Unauthorized']}, 401
 
 
-    """
+"""
     auth_routes.py this is just the file name 
-
-POST /api/auth/login – email+password → tokens/session. ok
-POST /api/auth/logout – invalidate token/session. ok 
-
-
-POST /api/auth/refresh – rotate access token. What is this for to update? what rotate access token? 
-GET /api/auth/me – current user profile. I don't know what is this 
+    POST /api/auth/login – email+password → tokens/session. ok 
+    POST /api/auth/logout – invalidate token/session. ok 
+    POST /api/auth/refresh – rotate access token. No need. we are not using JWT tokens.
+    GET /api/auth/me – current user profile. ok
     """

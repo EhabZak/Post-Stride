@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app.models import db, User
 
+
 user_routes = Blueprint('users', __name__)
 
 #! Get all users ///////////////////////////////////////////////////////////////////////////
@@ -141,7 +142,7 @@ def delete_user(user_id):
 
 
 
-    """ 
+""" 
     users_routes.py (users)
 
     GET /api/users (admin) – list; filters: email, created_from, created_to. ok
@@ -154,4 +155,4 @@ def delete_user(user_id):
 
     DELETE /api/users/:id – delete (admin or self with checks). ok
     
-    """
+    """   
