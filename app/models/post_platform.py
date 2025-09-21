@@ -5,9 +5,6 @@ from datetime import datetime
 class PostPlatform(db.Model):
     __tablename__ = 'post_platforms'
 
-    if environment == "production":
-        __table_args__ = {'schema': SCHEMA}
-
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('posts.id')), nullable=False)
     platform_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('social_platforms.id')), nullable=False)
@@ -21,11 +18,13 @@ class PostPlatform(db.Model):
     post = db.relationship('Post', back_populates='post_platforms')
     platform = db.relationship('SocialPlatform', back_populates='post_platforms')
 
-    # Indexes
+    # Schema and Indexes
+    schema_args = {'schema': SCHEMA} if environment == "production" else {}
     __table_args__ = (
         db.Index('idx_post_platform_unique', 'post_id', 'platform_id', unique=True),
         db.Index('idx_status', 'status'),
         db.Index('idx_platform_post_id', 'platform_post_id'),
+        schema_args,  # dict must be the last element
     )
 
     def to_dict(self):

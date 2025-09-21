@@ -5,9 +5,6 @@ from datetime import datetime
 class Media(db.Model):
     __tablename__ = 'media'
 
-    if environment == "production":
-        __table_args__ = {'schema': SCHEMA}
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('users.id')), nullable=False)
     media_type = db.Column(db.String(50), nullable=False)  # image|video|gif|audio|document
@@ -18,9 +15,11 @@ class Media(db.Model):
     user = db.relationship('User', back_populates='media')
     post_media = db.relationship('PostMedia', back_populates='media', cascade='all, delete-orphan')
 
-    # Indexes
+    # Schema and Indexes
+    schema_args = {'schema': SCHEMA} if environment == "production" else {}
     __table_args__ = (
         db.Index('idx_user_created_at', 'user_id', 'created_at'),
+        schema_args,  # dict must be the last element
     )
 
     def to_dict(self):

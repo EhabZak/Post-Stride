@@ -5,9 +5,6 @@ from datetime import datetime
 class PostMedia(db.Model):
     __tablename__ = 'post_media'
 
-    if environment == "production":
-        __table_args__ = {'schema': SCHEMA}
-
     post_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('posts.id')), primary_key=True)
     media_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('media.id')), primary_key=True)
     sort_order = db.Column(db.Integer)  # optional ordering for composer/publisher
@@ -17,10 +14,12 @@ class PostMedia(db.Model):
     post = db.relationship('Post', back_populates='post_media')
     media = db.relationship('Media', back_populates='post_media')
 
-    # Indexes
+    # Schema and Indexes
+    schema_args = {'schema': SCHEMA} if environment == "production" else {}
     __table_args__ = (
         db.Index('idx_post_sort_order', 'post_id', 'sort_order'),
         db.Index('idx_media_id', 'media_id'),
+        schema_args,  # dict must be the last element
     )
 
     def to_dict(self):

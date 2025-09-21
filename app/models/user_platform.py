@@ -6,9 +6,6 @@ from ..utils.encryption import encrypt_token, decrypt_token, mask_token
 class UserPlatform(db.Model):
     __tablename__ = 'user_platforms'
 
-    if environment == "production":
-        __table_args__ = {'schema': SCHEMA}
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('users.id')), nullable=False)
     platform_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('social_platforms.id')), nullable=False)
@@ -44,11 +41,13 @@ class UserPlatform(db.Model):
         """Set encrypted refresh token."""
         self._refresh_token = encrypt_token(value)
 
-    # Indexes
+    # Schema and Indexes
+    schema_args = {'schema': SCHEMA} if environment == "production" else {}
     __table_args__ = (
         db.Index('idx_user_platform_unique', 'user_id', 'platform_id', 'platform_user_id', unique=True),
         db.Index('idx_user_platform', 'user_id', 'platform_id'),
         db.Index('idx_token_expiry', 'token_expiry'),
+        schema_args,  # dict must be the last element
     )
 
     def to_dict(self, include_tokens=False):

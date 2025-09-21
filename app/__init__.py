@@ -10,6 +10,7 @@ from .api.auth_routes import auth_routes
 from .api.posts_routes import posts_routes
 from .api.platforms_routes import platforms_routes
 from .api.user_platforms_routes import user_platforms_routes
+from .api.post_platforms_routes import post_platforms_routes
 from .seeds import seed_commands
 from .config import Config
 
@@ -34,6 +35,7 @@ app.register_blueprint(auth_routes, url_prefix='/api/auth')
 app.register_blueprint(posts_routes, url_prefix='/api/posts')
 app.register_blueprint(platforms_routes, url_prefix='/api/platforms')
 app.register_blueprint(user_platforms_routes, url_prefix='/api/user-platforms')
+app.register_blueprint(post_platforms_routes, url_prefix='/api')
 db.init_app(app)
 Migrate(app, db)
 
