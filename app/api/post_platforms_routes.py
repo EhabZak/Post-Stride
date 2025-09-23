@@ -1,15 +1,15 @@
 """
 post_platforms_routes.py (post_platforms)
 
-GET /api/posts/:post_id/platforms – list per-platform rows (filter status=pending|queued|publishing|published|failed|skipped).
+GET /api/posts/:post_id/platforms – list per-platform rows (filter status=pending|queued|publishing|published|failed|skipped). ok
 
-POST /api/posts/:post_id/platforms – bulk attach platforms (create rows; allow per-platform caption/media).
+POST /api/posts/:post_id/platforms – bulk attach platforms (create rows; allow per-platform caption/media). ok
 
-GET /api/posts/:post_id/platforms/:platform_id – fetch one row.
+GET /api/posts/:post_id/platforms/:platform_id – fetch one row.  ok
 
-PATCH /api/posts/:post_id/platforms/:platform_id – update platform_caption, media_urls, or status.
+PATCH /api/posts/:post_id/platforms/:platform_id – update platform_caption, media_urls, or status. ok
 
-DELETE /api/posts/:post_id/platforms/:platform_id – detach platform.
+DELETE /api/posts/:post_id/platforms/:platform_id – detach/dalete platform. ok 
 
 POST /api/posts/:post_id/platforms/:platform_id/queue – set status=queued.
 
