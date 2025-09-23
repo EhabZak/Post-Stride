@@ -11,6 +11,7 @@ from .api.posts_routes import posts_routes
 from .api.platforms_routes import platforms_routes
 from .api.user_platforms_routes import user_platforms_routes
 from .api.post_platforms_routes import post_platforms_routes
+from .api.media_routes import media_routes
 from .seeds import seed_commands
 from .config import Config
 
@@ -36,6 +37,7 @@ app.register_blueprint(posts_routes, url_prefix='/api/posts')
 app.register_blueprint(platforms_routes, url_prefix='/api/platforms')
 app.register_blueprint(user_platforms_routes, url_prefix='/api/user-platforms')
 app.register_blueprint(post_platforms_routes, url_prefix='/api')
+app.register_blueprint(media_routes, url_prefix='/api/media')
 db.init_app(app)
 Migrate(app, db)
 
