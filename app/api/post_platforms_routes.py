@@ -11,13 +11,13 @@ PATCH /api/posts/:post_id/platforms/:platform_id – update platform_caption, me
 
 DELETE /api/posts/:post_id/platforms/:platform_id – detach/dalete platform. ok 
 
-POST /api/posts/:post_id/platforms/:platform_id/queue – set status=queued.
+POST /api/posts/:post_id/platforms/:platform_id/queue – set status=queued. ok
 
-POST /api/posts/:post_id/platforms/:platform_id/retry – retry failed.
+POST /api/posts/:post_id/platforms/:platform_id/retry – retry failed. ok
 
-POST /api/posts/:post_id/platforms/:platform_id/cancel – set status=skipped.
+POST /api/posts/:post_id/platforms/:platform_id/cancel – set status=skipped cancel posting on a platform. ok
 
-(ops) GET /api/post-platforms – cross-post view; filters: status, platform_id, published_from/to.
+(ops) GET /api/post-platforms – cross-post view; filters: status, platform_id, published_from/to. ok
 
 """
 
