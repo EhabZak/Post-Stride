@@ -11,7 +11,8 @@ import redis
 from rq import Queue
 
 health_bp = Blueprint("health", __name__, url_prefix="/api/health")
-#! Redis ///////////////////////////////////////////////////////////////////////////
+
+#//redis ///////////////////////////////////////////////////////////////////////////
 # init redis client once (or inject)
 def get_redis():
     url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
