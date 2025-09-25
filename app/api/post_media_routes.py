@@ -7,11 +7,11 @@ GET /api/posts/:post_id/media – list media attached to a post (ordered by sort
 
 POST /api/posts/:post_id/media – attach one/many media_ids[] (optional sort_order). ok 
 
-PATCH /api/posts/:post_id/media/:media_id – update sort_order.
+PATCH /api/posts/:post_id/media/:media_id – update sort_order. ok
 
-DELETE /api/posts/:post_id/media/:media_id – detach.
+DELETE /api/posts/:post_id/media/:media_id – detach. ok
 
-POST /api/posts/:post_id/media/reorder – bulk reorder [{"media_id","sort_order"}...].
+POST /api/posts/:post_id/media/reorder – bulk reorder [{"media_id","sort_order"}...]. ok
 """
 
 from flask import Blueprint, request, jsonify
@@ -105,6 +105,8 @@ def attach_media_to_post(post_id):
     created_attachments = []
     errors = []
 
+    # First pass: validate all attachments and collect sort_orders
+    attachments_to_create = []
     for item in media_attachments:
         media_id = item['media_id']
         sort_order = item.get('sort_order')
@@ -120,6 +122,38 @@ def attach_media_to_post(post_id):
                 errors.append(f'Media {media_id} is already attached to this post')
                 continue
 
+            attachments_to_create.append({
+                'media_id': media_id,
+                'sort_order': sort_order
+            })
+
+        except Exception as e:
+            errors.append(f'Error validating media {media_id}: {str(e)}')
+
+    if errors and not attachments_to_create:
+        return jsonify({'error': 'Failed to attach media', 'details': errors}), 400
+
+    try:
+        # Second pass: handle atomic shifting for each attachment
+        for attachment_data in attachments_to_create:
+            media_id = attachment_data['media_id']
+            sort_order = attachment_data['sort_order']
+            
+            # If sort_order is specified and not None, shift existing items
+            if sort_order is not None:
+                # Check if any existing media has this sort_order
+                existing_with_order = PostMedia.query.filter_by(
+                    post_id=post_id,
+                    sort_order=sort_order
+                ).first()
+                
+                if existing_with_order:
+                    # Shift all items with sort_order >= new_sort_order by +1
+                    PostMedia.query.filter(
+                        PostMedia.post_id == post_id,
+                        PostMedia.sort_order >= sort_order
+                    ).update({PostMedia.sort_order: PostMedia.sort_order + 1})
+
             # Create post media attachment
             post_media = PostMedia(
                 post_id=post_id,
@@ -130,14 +164,6 @@ def attach_media_to_post(post_id):
             db.session.add(post_media)
             created_attachments.append(post_media)
 
-        except Exception as e:
-            errors.append(f'Error attaching media {media_id}: {str(e)}')
-
-    if errors and not created_attachments:
-        db.session.rollback()
-        return jsonify({'error': 'Failed to attach media', 'details': errors}), 400
-
-    try:
         db.session.commit()
         
         # Fetch the complete media objects with their details
@@ -164,7 +190,7 @@ def attach_media_to_post(post_id):
 @login_required
 def update_media_sort_order(post_id, media_id):
     """
-    PATCH /api/posts/:post_id/media/:media_id – update sort_order
+    PATCH /api/posts/:post_id/media/:media_id – update sort_order with atomic shifting
     """
     # Verify post exists and belongs to current user
     post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
@@ -189,16 +215,47 @@ def update_media_sort_order(post_id, media_id):
     if not data or 'sort_order' not in data:
         return jsonify({'error': 'sort_order is required'}), 400
 
-    sort_order = data['sort_order']
-    if not isinstance(sort_order, int) and sort_order is not None:
+    new_sort_order = data['sort_order']
+    if not isinstance(new_sort_order, int) and new_sort_order is not None:
         return jsonify({'error': 'sort_order must be an integer or null'}), 400
 
+    old_sort_order = post_media.sort_order
+
+    # If sort_order hasn't changed, no need to do anything
+    if old_sort_order == new_sort_order:
+        return jsonify({
+            'message': 'Sort order unchanged',
+            'post_media': post_media.to_dict()
+        })
+
     try:
-        post_media.sort_order = sort_order
+        # Atomic shifting logic to maintain clean indices
+        if new_sort_order is not None and old_sort_order is not None:
+            if new_sort_order < old_sort_order:
+                # Moving to earlier position: increment items in [new_sort_order, old_sort_order-1]
+                PostMedia.query.filter(
+                    PostMedia.post_id == post_id,
+                    PostMedia.media_id != media_id,  # Exclude the item being moved
+                    PostMedia.sort_order >= new_sort_order,
+                    PostMedia.sort_order < old_sort_order
+                ).update({PostMedia.sort_order: PostMedia.sort_order + 1})
+                
+            elif new_sort_order > old_sort_order:
+                # Moving to later position: decrement items in [old_sort_order+1, new_sort_order]
+                PostMedia.query.filter(
+                    PostMedia.post_id == post_id,
+                    PostMedia.media_id != media_id,  # Exclude the item being moved
+                    PostMedia.sort_order > old_sort_order,
+                    PostMedia.sort_order <= new_sort_order
+                ).update({PostMedia.sort_order: PostMedia.sort_order - 1})
+
+        # Set the new sort_order for the moved item
+        post_media.sort_order = new_sort_order
+        
         db.session.commit()
 
         return jsonify({
-            'message': 'Sort order updated successfully',
+            'message': 'Sort order updated successfully with atomic shifting',
             'post_media': post_media.to_dict()
         })
     except Exception as e:
@@ -299,23 +356,68 @@ def reorder_post_media(post_id):
         return jsonify({'error': f'Media {list(missing_ids)} are not attached to this post'}), 404
 
     try:
-        # Update sort orders
-        updated_count = 0
-        for item in media_orders:
+        # First, get all current sort_orders to track changes
+        current_media_orders = {}
+        for pm in existing_attachments:
+            current_media_orders[pm.media_id] = pm.sort_order
+        
+        # Create a mapping of media_id to new sort_order
+        new_orders = {item['media_id']: item['sort_order'] for item in media_orders}
+        
+        # Identify which items are actually changing position
+        changes = []
+        for media_id, new_order in new_orders.items():
+            old_order = current_media_orders.get(media_id)
+            if old_order != new_order:
+                changes.append({
+                    'media_id': media_id,
+                    'old_order': old_order,
+                    'new_order': new_order
+                })
+        
+        # Sort changes by new_order to process them in order
+        changes.sort(key=lambda x: x['new_order'] if x['new_order'] is not None else float('inf'))
+        
+        # Process each change with atomic shifting
+        for change in changes:
+            media_id = change['media_id']
+            old_order = change['old_order']
+            new_order = change['new_order']
+            
+            if old_order is not None and new_order is not None:
+                if new_order < old_order:
+                    # Moving to earlier position: increment items in [new_order, old_order-1]
+                    PostMedia.query.filter(
+                        PostMedia.post_id == post_id,
+                        PostMedia.media_id != media_id,  # Exclude the item being moved
+                        PostMedia.sort_order >= new_order,
+                        PostMedia.sort_order < old_order
+                    ).update({PostMedia.sort_order: PostMedia.sort_order + 1})
+                    
+                elif new_order > old_order:
+                    # Moving to later position: decrement items in [old_order+1, new_order]
+                    PostMedia.query.filter(
+                        PostMedia.post_id == post_id,
+                        PostMedia.media_id != media_id,  # Exclude the item being moved
+                        PostMedia.sort_order > old_order,
+                        PostMedia.sort_order <= new_order
+                    ).update({PostMedia.sort_order: PostMedia.sort_order - 1})
+            
+            # Set the new sort_order for the moved item
             post_media = PostMedia.query.filter_by(
                 post_id=post_id,
-                media_id=item['media_id']
+                media_id=media_id
             ).first()
             
             if post_media:
-                post_media.sort_order = item['sort_order']
-                updated_count += 1
+                post_media.sort_order = new_order
 
         db.session.commit()
 
         return jsonify({
-            'message': f'Successfully reordered {updated_count} media items',
-            'updated_count': updated_count
+            'message': f'Successfully reordered {len(changes)} media items with atomic shifting',
+            'updated_count': len(changes),
+            'changes': changes
         })
     except Exception as e:
         db.session.rollback()
