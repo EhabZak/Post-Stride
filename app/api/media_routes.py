@@ -11,7 +11,7 @@ GET /api/media/:id – fetch one media record by id (ownership). ok
 
 DELETE /api/media/:id – delete a media record by id (and detach from posts). ok
 
-POST /api/media/bulk-delete – delete many by IDs. ook
+POST /api/media/bulk-delete – delete many by IDs. ok
 """
 
 from flask import Blueprint, request, jsonify
