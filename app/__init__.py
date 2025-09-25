@@ -13,6 +13,7 @@ from .api.user_platforms_routes import user_platforms_routes
 from .api.post_platforms_routes import post_platforms_routes
 from .api.media_routes import media_routes
 from .api.post_media_routes import post_media_routes
+from .api.health_routes import health_bp
 from .seeds import seed_commands
 from .config import Config
 
@@ -40,6 +41,7 @@ app.register_blueprint(user_platforms_routes, url_prefix='/api/user-platforms')
 app.register_blueprint(post_platforms_routes, url_prefix='/api')
 app.register_blueprint(media_routes, url_prefix='/api/media')
 app.register_blueprint(post_media_routes, url_prefix='/api')
+app.register_blueprint(health_bp)
 db.init_app(app)
 Migrate(app, db)
 
