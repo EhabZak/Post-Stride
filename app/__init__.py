@@ -16,6 +16,7 @@ from .api.post_media_routes import post_media_routes
 from .api.health_routes import health_bp
 from .seeds import seed_commands
 from .config import Config
+from .extensions import init_redis
 
 app = Flask(__name__, static_folder='../react-app/build', static_url_path='/')
 
@@ -44,6 +45,7 @@ app.register_blueprint(post_media_routes, url_prefix='/api')
 app.register_blueprint(health_bp)
 db.init_app(app)
 Migrate(app, db)
+init_redis(app.config["REDIS_URL"])
 
 # Application Security
 CORS(app)
