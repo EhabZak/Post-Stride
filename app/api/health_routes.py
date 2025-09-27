@@ -6,6 +6,7 @@ GET /api/health – liveness/readiness probe.
 from flask import Blueprint, jsonify, current_app
 from sqlalchemy import text
 from app.models import db
+from app.config import Config
 import os, shutil, time
 import redis
 from rq import Queue
@@ -15,7 +16,7 @@ health_bp = Blueprint("health", __name__, url_prefix="/api/health")
 #//redis ///////////////////////////////////////////////////////////////////////////
 # init redis client once (or inject)
 def get_redis():
-    url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    url = Config.REDIS_URL
     return redis.Redis.from_url(url, socket_connect_timeout=0.2, socket_timeout=0.2)
 
 REDIS = get_redis()

@@ -11,3 +11,4 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL').replace('postgres://', 'postgresql://')
     SQLALCHEMY_ECHO = True
+    REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
