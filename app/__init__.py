@@ -14,6 +14,7 @@ from .api.post_platforms_routes import post_platforms_routes
 from .api.media_routes import media_routes
 from .api.post_media_routes import post_media_routes
 from .api.health_routes import health_bp
+from .api.admin_jobs_routes import admin_jobs_routes
 from .seeds import seed_commands
 from .config import Config
 from .extensions.queue import init_redis
@@ -44,6 +45,7 @@ app.register_blueprint(post_platforms_routes, url_prefix='/api')
 app.register_blueprint(media_routes, url_prefix='/api/media')
 app.register_blueprint(post_media_routes, url_prefix='/api')
 app.register_blueprint(health_bp)
+app.register_blueprint(admin_jobs_routes)
 db.init_app(app)
 Migrate(app, db)
 

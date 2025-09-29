@@ -3,8 +3,27 @@ from flask_login import login_required, current_user
 from app.models import db, Post, PostPlatform, PostMedia, Media, SocialPlatform
 from datetime import datetime, timezone
 import re
+from rq import Retry
+from app.extensions.queue import get_queue
 
 posts_routes = Blueprint('posts', __name__)
+
+#! RQ helpers ///////////////////////////////////////////////////////////////////////////
+def _to_naive_utc(dt: datetime) -> datetime:
+    """Return a naive-UTC datetime for RQ (assumes naive means already-UTC)."""
+    if dt.tzinfo is None:
+        return dt  # treat naive as UTC
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)
+#! _parse_iso ///////////////////////////////////////////////////////////////////////////
+def _parse_iso(dt_str: str) -> datetime:
+    """
+    Strict-ish ISO parser that handles trailing 'Z' (UTC) and offsets.
+    Raises ValueError on bad format.
+    """
+    s = dt_str.strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    return datetime.fromisoformat(s)
 
 def parse_iso_datetime(datetime_str):
     """
@@ -313,38 +332,59 @@ def delete_post(post_id):
 @login_required
 def schedule_post(post_id):
     """
-    POST /api/posts/:id/schedule – set scheduled_time, status=scheduled
+    POST /api/posts/:id/schedule
+    body: {"scheduled_time": "2025-09-28T18:45:00Z"}
     """
     try:
-        # Find post belonging to current user
         post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
-        
         if not post:
             return jsonify({'error': 'Post not found'}), 404
-        
-        data = request.get_json()
-        if not data or 'scheduled_time' not in data:
+
+        data = request.get_json() or {}
+        iso = data.get('scheduled_time')
+        if not iso:
             return jsonify({'error': 'scheduled_time is required'}), 400
-        
-        # Parse and validate scheduled_time
+
         try:
-            scheduled_time = parse_iso_datetime(data['scheduled_time'])
-        except ValueError:
-            return jsonify({'error': 'Invalid scheduled_time format. Use ISO format.'}), 400
-        
-        # Check if scheduled time is in the future
-        if scheduled_time <= datetime.utcnow():
+            dt = _parse_iso(iso)
+        except Exception:
+            return jsonify({'error': 'Invalid scheduled_time format. Use ISO 8601.'}), 400
+
+        when_utc_naive = _to_naive_utc(dt)
+
+        if when_utc_naive <= datetime.utcnow():
             return jsonify({'error': 'Scheduled time must be in the future'}), 400
-        
-        # Update post
-        post.scheduled_time = scheduled_time
+
+        # Persist schedule
+        post.scheduled_time = when_utc_naive
         post.status = 'scheduled'
         post.updated_at = datetime.utcnow()
-        
         db.session.commit()
-        
-        return jsonify({'post': post.to_dict()}), 200
-        
+
+        # Enqueue the publish job exactly at that time
+        q = get_queue()
+        job_id = f"publish_post:{post.id}:{int(when_utc_naive.timestamp())}"
+        q.enqueue_at(
+            when_utc_naive,
+            "app.tasks.publish_post",
+            post.id,
+            job_id=job_id,
+            retry=Retry(max=3, interval=[60, 300, 900]),  # optional retries
+            meta={"post_id": post.id}
+        )
+
+        # inside schedule_post after you enqueue the job
+        pps = PostPlatform.query.filter_by(post_id=post.id).all()
+        platforms = [{"id": pp.platform_id, "name": pp.platform.name} for pp in pps]
+
+        return jsonify({
+            'message': 'post scheduled',
+            'post_id': post.id,
+            'scheduled_time_utc': when_utc_naive.isoformat() + "Z",
+            'rq_job_id': job_id, # I don't know if we have this in database i need to check
+            'platforms': platforms
+        }), 200
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
