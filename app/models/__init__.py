@@ -7,3 +7,4 @@ from .post_platform import PostPlatform
 from .media import Media
 from .post_media import PostMedia
 from .db import environment, SCHEMA
+from .scheduled_job import ScheduledJob

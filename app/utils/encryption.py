@@ -125,16 +125,36 @@ class TokenEncryption:
         return f"{token[:visible_chars]}...{token[-visible_chars:]}"
 
 # Global instance for use throughout the application
-token_encryption = TokenEncryption()
+token_encryption = None
+
+def _get_encryption_instance():
+    """Get or create the encryption instance lazily."""
+    global token_encryption
+    if token_encryption is None:
+        try:
+            token_encryption = TokenEncryption()
+        except ValueError as e:
+            print(f"Warning: Token encryption not available: {e}")
+            token_encryption = None
+    return token_encryption
 
 def encrypt_token(token):
     """Convenience function to encrypt a token."""
-    return token_encryption.encrypt_token(token)
+    instance = _get_encryption_instance()
+    if instance is None:
+        raise RuntimeError("Token encryption not initialized. Check environment variables.")
+    return instance.encrypt_token(token)
 
 def decrypt_token(encrypted_token):
     """Convenience function to decrypt a token."""
-    return token_encryption.decrypt_token(encrypted_token)
+    instance = _get_encryption_instance()
+    if instance is None:
+        raise RuntimeError("Token encryption not initialized. Check environment variables.")
+    return instance.decrypt_token(encrypted_token)
 
 def mask_token(token, visible_chars=4):
     """Convenience function to mask a token for logging."""
-    return token_encryption.mask_token(token, visible_chars)
+    instance = _get_encryption_instance()
+    if instance is None:
+        return "***encryption_not_available***"
+    return instance.mask_token(token, visible_chars)
