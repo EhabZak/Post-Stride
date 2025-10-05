@@ -9,6 +9,9 @@ import app.tasks  # noqa: F401 - needed to register tasks with RQ
 
 from app.extensions.queue import redis_conn, task_queue
 
+
 if __name__ == "__main__":
     with Connection(redis_conn):
-        Worker([task_queue]).work(with_scheduler=True)
+        # this is the alternative to using rqscheduler.Scheduler() but it is a small set up for a single worker
+        #  if you want to scale up you need use the rqscheduler.Scheduler()
+        Worker([task_queue]).work(with_scheduler=False) 

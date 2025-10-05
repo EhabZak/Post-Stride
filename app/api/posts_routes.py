@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import re
 from rq import Retry
 from app.extensions.queue import get_queue
+from app.scheduler import schedule_post_at
 
 posts_routes = Blueprint('posts', __name__)
 
@@ -331,9 +332,14 @@ def delete_post(post_id):
 @posts_routes.route('/<int:post_id>/schedule', methods=['POST'])
 @login_required
 def schedule_post(post_id):
+    
     """
     POST /api/posts/:id/schedule
     body: {"scheduled_time": "2025-09-28T18:45:00Z"}
+
+    - Parses ISO time (assumed UTC if "Z" provided or tz-aware).
+    - Persists scheduled_time and sets post.status="scheduled".
+    - Uses scheduler helper to enqueue a one-time job at the exact time.
     """
     try:
         post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
@@ -345,44 +351,45 @@ def schedule_post(post_id):
         if not iso:
             return jsonify({'error': 'scheduled_time is required'}), 400
 
+        # Parse & normalize to UTC-naive (same convention you already use)
         try:
-            dt = _parse_iso(iso)
+            dt = _parse_iso(iso)                # your existing helper
+            when_utc_naive = _to_naive_utc(dt)  # your existing helper
         except Exception:
             return jsonify({'error': 'Invalid scheduled_time format. Use ISO 8601.'}), 400
 
-        when_utc_naive = _to_naive_utc(dt)
-
+        # Must be in the future (compare to UTC "now")
         if when_utc_naive <= datetime.utcnow():
             return jsonify({'error': 'Scheduled time must be in the future'}), 400
 
-        # Persist schedule
+        # Persist schedule on the Post
         post.scheduled_time = when_utc_naive
         post.status = 'scheduled'
         post.updated_at = datetime.utcnow()
         db.session.commit()
 
-        # Enqueue the publish job exactly at that time
-        q = get_queue()
-        job_id = f"publish_post:{post.id}:{int(when_utc_naive.timestamp())}"
-        q.enqueue_at(
-            when_utc_naive,
-            "app.tasks.publish_post",
-            post.id,
+        # Create a stable job id (handy for cancel/reschedule later)
+        job_id = f"publish_post-{post.id}-{int(when_utc_naive.timestamp())}"
+
+        # Enqueue the publish job exactly at that time via the scheduler helper
+        # (This wraps Queue.enqueue_at with your standard retry + meta)
+        job = schedule_post_at(
+            post_id=post.id,
+            when=when_utc_naive,
             job_id=job_id,
-            retry=Retry(max=3, interval=[60, 300, 900]),  # optional retries
             meta={"post_id": post.id}
         )
 
-        # inside schedule_post after you enqueue the job
+        # Return attached platforms for convenience
         pps = PostPlatform.query.filter_by(post_id=post.id).all()
         platforms = [{"id": pp.platform_id, "name": pp.platform.name} for pp in pps]
 
         return jsonify({
-            'message': 'post scheduled',
-            'post_id': post.id,
-            'scheduled_time_utc': when_utc_naive.isoformat() + "Z",
-            'rq_job_id': job_id, # I don't know if we have this in database i need to check
-            'platforms': platforms
+            "message": "post scheduled",
+            "post_id": post.id,
+            "scheduled_time_utc": when_utc_naive.isoformat() + "Z",  # explicit UTC
+            "rq_job_id": job.id,  # equals job_id above
+            "platforms": platforms
         }), 200
 
     except Exception as e:
