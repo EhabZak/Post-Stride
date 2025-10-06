@@ -1,5 +1,6 @@
 from .db import db, environment, SCHEMA, add_prefix_for_prod
 from datetime import datetime
+from app.utils.timezone_helpers import format_utc_with_z
 
 
 class Post(db.Model):
@@ -31,8 +32,8 @@ class Post(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'caption': self.caption,
-            'scheduled_time': self.scheduled_time.isoformat() if self.scheduled_time else None,
+            'scheduled_time': format_utc_with_z(self.scheduled_time),
             'status': self.status,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'created_at': format_utc_with_z(self.created_at),
+            'updated_at': format_utc_with_z(self.updated_at)
         }

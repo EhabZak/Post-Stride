@@ -232,7 +232,15 @@
 # #     jid = ensure_recurring_publish_demo(interval_minutes=15)
 # #     print(f"Recurring job ensured: {jid}")
 # #     print("Tip: remember to run `rqscheduler --queue poststride-tasks --url $REDIS_URL`.")
-# app/scheduler.py (patched)
+# app/scheduler.py
+"""
+Centralized scheduler helpers for one-time + recurring schedules.
+
+TIMEZONE CONVENTION:
+- All scheduling operations expect naive UTC datetimes
+- _to_utc_naive() normalizes any datetime to naive UTC for consistency
+- Database stores naive UTC; API layer handles user timezone conversion
+"""
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 
@@ -241,7 +249,7 @@ from rq.job import Job
 from rq.registry import ScheduledJobRegistry
 from rq_scheduler import Scheduler
 
-from app.extensions.queue import get_queue, redis_conn  # <-- use get_queue()
+from app.extensions.queue import get_queue, redis_conn
 
 JOB_FUNC_PATH = "app.tasks.publish_post"
 

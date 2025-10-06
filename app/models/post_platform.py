@@ -1,5 +1,6 @@
 from .db import db, environment, SCHEMA, add_prefix_for_prod
 from datetime import datetime
+from app.utils.timezone_helpers import format_utc_with_z
 
 
 class PostPlatform(db.Model):
@@ -36,5 +37,5 @@ class PostPlatform(db.Model):
             'media_urls': self.media_urls,
             'platform_post_id': self.platform_post_id,
             'status': self.status,
-            'published_at': self.published_at.isoformat() if self.published_at else None
+            'published_at': format_utc_with_z(self.published_at)
         }

@@ -5,47 +5,17 @@ from datetime import datetime, timezone
 import re
 from rq import Retry
 from app.extensions.queue import get_queue
+from app.utils.timezone_helpers import (
+    parse_iso_to_utc,
+    format_dual_time,
+    format_utc_with_z,
+    to_utc_naive
+)
 from app.scheduler import schedule_post_at
 
 posts_routes = Blueprint('posts', __name__)
 
-#! RQ helpers ///////////////////////////////////////////////////////////////////////////
-def _to_naive_utc(dt: datetime) -> datetime:
-    """Return a naive-UTC datetime for RQ (assumes naive means already-UTC)."""
-    if dt.tzinfo is None:
-        return dt  # treat naive as UTC
-    return dt.astimezone(timezone.utc).replace(tzinfo=None)
-#! _parse_iso ///////////////////////////////////////////////////////////////////////////
-def _parse_iso(dt_str: str) -> datetime:
-    """
-    Strict-ish ISO parser that handles trailing 'Z' (UTC) and offsets.
-    Raises ValueError on bad format.
-    """
-    s = dt_str.strip()
-    if s.endswith("Z"):
-        s = s[:-1] + "+00:00"
-    return datetime.fromisoformat(s)
-
-def parse_iso_datetime(datetime_str):
-    """
-    Parse ISO 8601 datetime string, handling 'Z' suffix for UTC
-    Returns a timezone-naive UTC datetime for database storage
-    """
-    if not datetime_str:
-        return None
-    
-    # Replace 'Z' with '+00:00' for UTC timezone
-    if datetime_str.endswith('Z'):
-        datetime_str = datetime_str[:-1] + '+00:00'
-    
-    try:
-        dt = datetime.fromisoformat(datetime_str)
-        # Convert to UTC and make timezone-naive for database storage
-        if dt.tzinfo is not None:
-            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-        return dt
-    except ValueError:
-        raise ValueError(f"Invalid datetime format: {datetime_str}")
+# Note: All old timezone helpers removed - now using app.utils.timezone_helpers
 
 #! Get all posts ///////////////////////////////////////////////////////////////////////////
 
@@ -76,14 +46,14 @@ def get_posts():
         
         if from_date:
             try:
-                from_datetime = parse_iso_datetime(from_date)
+                from_datetime = parse_iso_to_utc(from_date, current_user.timezone)
                 query = query.filter(Post.scheduled_time >= from_datetime)
             except ValueError:
                 return jsonify({'error': 'Invalid from_date format. Use ISO format.'}), 400
         
         if to_date:
             try:
-                to_datetime = parse_iso_datetime(to_date)
+                to_datetime = parse_iso_to_utc(to_date, current_user.timezone)
                 query = query.filter(Post.scheduled_time <= to_datetime)
             except ValueError:
                 return jsonify({'error': 'Invalid to_date format. Use ISO format.'}), 400
@@ -122,6 +92,10 @@ def get_posts():
         for post in posts:
             post_data = post.to_dict()
             
+            # Add dual time format for scheduled_time (UTC + user local)
+            if post.scheduled_time:
+                post_data['scheduled_time_detail'] = format_dual_time(post.scheduled_time, current_user.timezone)
+            
             # Add platform information /////////////////////////////////////
             post_data['platforms'] = []
             for post_platform in post.post_platforms:
@@ -129,8 +103,11 @@ def get_posts():
                     'platform_id': post_platform.platform_id,
                     'platform_name': post_platform.platform.name,
                     'status': post_platform.status,
-                    'published_at': post_platform.published_at.isoformat() if post_platform.published_at else None
+                    'published_at': format_utc_with_z(post_platform.published_at)
                 }
+                # Add dual time for published_at
+                if post_platform.published_at:
+                    platform_data['published_at_detail'] = format_dual_time(post_platform.published_at, current_user.timezone)
                 post_data['platforms'].append(platform_data)
             
             # Add media information /////////////////////////////////////
@@ -178,7 +155,7 @@ def create_post():
         # Parse scheduled_time if provided /////////////////////////////////////
         if scheduled_time:
             try:
-                scheduled_time = parse_iso_datetime(scheduled_time)
+                scheduled_time = parse_iso_to_utc(scheduled_time, current_user.timezone)
             except ValueError:
                 return jsonify({'error': 'Invalid scheduled_time format. Use ISO format.'}), 400
         
@@ -219,6 +196,10 @@ def get_post(post_id):
         # Get post data /////////////////////////////////////
         post_data = post.to_dict()
         
+        # Add dual time format for scheduled_time
+        if post.scheduled_time:
+            post_data['scheduled_time_detail'] = format_dual_time(post.scheduled_time, current_user.timezone)
+        
         # Add detailed platform information /////////////////////////////////////
         post_data['platforms'] = []
         for post_platform in post.post_platforms:
@@ -230,8 +211,11 @@ def get_post(post_id):
                 'media_urls': post_platform.media_urls,
                 'platform_post_id': post_platform.platform_post_id,
                 'status': post_platform.status,
-                'published_at': post_platform.published_at.isoformat() if post_platform.published_at else None
+                'published_at': format_utc_with_z(post_platform.published_at)
             }
+            # Add dual time for published_at
+            if post_platform.published_at:
+                platform_data['published_at_detail'] = format_dual_time(post_platform.published_at, current_user.timezone)
             post_data['platforms'].append(platform_data)
         
         # Add detailed media information /////////////////////////////////////
@@ -280,7 +264,7 @@ def update_post(post_id):
                 post.scheduled_time = None
             else:
                 try:
-                    post.scheduled_time = parse_iso_datetime(data['scheduled_time'])
+                    post.scheduled_time = parse_iso_to_utc(data['scheduled_time'], current_user.timezone)
                 except ValueError:
                     return jsonify({'error': 'Invalid scheduled_time format. Use ISO format.'}), 400
         
@@ -351,10 +335,9 @@ def schedule_post(post_id):
         if not iso:
             return jsonify({'error': 'scheduled_time is required'}), 400
 
-        # Parse & normalize to UTC-naive (same convention you already use)
+        # Parse & normalize to UTC-naive (uses user timezone for naive inputs)
         try:
-            dt = _parse_iso(iso)                # your existing helper
-            when_utc_naive = _to_naive_utc(dt)  # your existing helper
+            when_utc_naive = parse_iso_to_utc(iso, current_user.timezone)
         except Exception:
             return jsonify({'error': 'Invalid scheduled_time format. Use ISO 8601.'}), 400
 
@@ -384,11 +367,15 @@ def schedule_post(post_id):
         pps = PostPlatform.query.filter_by(post_id=post.id).all()
         platforms = [{"id": pp.platform_id, "name": pp.platform.name} for pp in pps]
 
+        # Return dual time format (UTC + user local time)
+        time_detail = format_dual_time(when_utc_naive, current_user.timezone)
+
         return jsonify({
             "message": "post scheduled",
             "post_id": post.id,
-            "scheduled_time_utc": when_utc_naive.isoformat() + "Z",  # explicit UTC
-            "rq_job_id": job.id,  # equals job_id above
+            "scheduled_time": format_utc_with_z(when_utc_naive),
+            "scheduled_time_detail": time_detail,
+            "rq_job_id": job.id,
             "platforms": platforms
         }), 200
 
@@ -488,8 +475,11 @@ def duplicate_post(post_id):
                 'media_urls': post_platform.media_urls,
                 'platform_post_id': post_platform.platform_post_id,
                 'status': post_platform.status,
-                'published_at': post_platform.published_at.isoformat() if post_platform.published_at else None
+                'published_at': format_utc_with_z(post_platform.published_at)
             }
+            # Add dual time for published_at
+            if post_platform.published_at:
+                platform_data['published_at_detail'] = format_dual_time(post_platform.published_at, current_user.timezone)
             post_data['platforms'].append(platform_data)
         
         # Add media information

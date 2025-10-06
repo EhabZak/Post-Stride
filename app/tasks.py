@@ -4,10 +4,16 @@ from flask import current_app
 from app import app as flask_app          # <-- use the global app you already create
 from app.models import db, Post, PostPlatform, SocialPlatform
 from app.extensions.queue import get_queue  # your RQ queue getter
+from app.utils.timezone_helpers import to_utc_naive  # Ensure UTC consistency
 
 # Create one global app for worker context
 flask_app.app_context().push()
 
+# =============================================================================
+# TIMEZONE CONVENTION
+# =============================================================================
+# All datetime operations in this file use datetime.utcnow() to maintain UTC consistency.
+# Database stores naive UTC datetimes. API layer handles timezone conversion for users.
 
 # =============================================================================
 # Public API (called by your routes / scheduler)

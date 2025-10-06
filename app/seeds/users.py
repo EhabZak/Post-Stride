@@ -5,11 +5,23 @@ from sqlalchemy.sql import text
 # Adds a demo user, you can add other users here if you want
 def seed_users():
     demo = User(
-        username='Demo', email='demo@aa.io', password='password')
+        username='Demo', 
+        email='demo@aa.io', 
+        password='password',
+        timezone='America/New_York'  # Eastern Time (UTC-5/-4)
+    )
     marnie = User(
-        username='marnie', email='marnie@aa.io', password='password')
+        username='marnie', 
+        email='marnie@aa.io', 
+        password='password',
+        timezone='America/Los_Angeles'  # Pacific Time (UTC-8/-7)
+    )
     bobbie = User(
-        username='bobbie', email='bobbie@aa.io', password='password')
+        username='bobbie', 
+        email='bobbie@aa.io', 
+        password='password',
+        timezone='Europe/Amsterdam'  # Central European Time (UTC+1/+2)
+    )
 
     db.session.add(demo)
     db.session.add(marnie)

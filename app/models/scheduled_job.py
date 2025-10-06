@@ -1,6 +1,7 @@
 from app.models import db
 from datetime import datetime
 import os
+from app.utils.timezone_helpers import format_utc_with_z
 
 # Get environment and schema for production
 environment = os.getenv('FLASK_ENV', 'development')
@@ -49,16 +50,16 @@ class ScheduledJob(db.Model):
             'queue_name': self.queue_name,
             'rq_job_id': self.rq_job_id,
             'status': self.status,
-            'scheduled_for': self.scheduled_for.isoformat() if self.scheduled_for else None,
-            'enqueued_at': self.enqueued_at.isoformat() if self.enqueued_at else None,
-            'started_at': self.started_at.isoformat() if self.started_at else None,
-            'finished_at': self.finished_at.isoformat() if self.finished_at else None,
-            'canceled_at': self.canceled_at.isoformat() if self.canceled_at else None,
+            'scheduled_for': format_utc_with_z(self.scheduled_for),
+            'enqueued_at': format_utc_with_z(self.enqueued_at),
+            'started_at': format_utc_with_z(self.started_at),
+            'finished_at': format_utc_with_z(self.finished_at),
+            'canceled_at': format_utc_with_z(self.canceled_at),
             'attempts': self.attempts,
             'max_retries': self.max_retries,
             'error_message': self.error_message,
             'traceback': self.traceback,
             'created_by_user_id': self.created_by_user_id,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'created_at': format_utc_with_z(self.created_at),
+            'updated_at': format_utc_with_z(self.updated_at),
         }
