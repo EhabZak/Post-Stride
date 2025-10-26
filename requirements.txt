@@ -25,10 +25,11 @@ python-dateutil==2.8.2
 python-dotenv==0.21.0
 python-editor==1.0.4
 redis==5.0.1
-rq==1.15.1
+rq==2.6.0
 six==1.16.0
 pytz==2024.1
 sqlalchemy==1.4.46
 werkzeug==2.2.2
 wtforms==3.0.1
-rq-scheduler>=0.13
+rq-scheduler==0.14.0
+email-validator==2.3.0
