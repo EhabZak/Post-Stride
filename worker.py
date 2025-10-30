@@ -4,11 +4,17 @@ sys.path.append(os.path.dirname(__file__))
 
 # from rq import Worker, Connection
 from rq import Worker 
+from app import app as flask_app                
+from app.extensions.queue import redis_conn, task_queue
+
+
+
+# Push app context BEFORE importing tasks to avoid circular imports
+flask_app.app_context().push()
 
 # Importing app.tasks will also import app/__init__.py and build the global app
 import app.tasks  # noqa: F401 - needed to register tasks with RQ
 
-from app.extensions.queue import redis_conn, task_queue
 
 
 if __name__ == "__main__":

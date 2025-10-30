@@ -249,48 +249,95 @@ from rq.job import Job
 from rq.registry import ScheduledJobRegistry
 from rq_scheduler import Scheduler
 
+
 from app.extensions.queue import get_queue, redis_conn
 
-JOB_FUNC_PATH = "app.tasks.publish_post"
-
+# JOB_FUNC_PATH = "app.tasks.publish_post"
+#! _to_utc_naive ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to convert a datetime to naive UTC.
+'''
 def _to_utc_naive(dt: datetime) -> datetime:
     if dt.tzinfo is not None:
         return dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
 
+#! _retry_policy ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to return a retry policy.
+'''
 def _retry_policy() -> Retry:
     return Retry(max=3, interval=[60, 300, 900])
 
+#! _scheduled_registry ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to return a scheduled job registry.
+'''
 def _scheduled_registry() -> ScheduledJobRegistry:
     # bind to the currently initialized queue
     return ScheduledJobRegistry(queue=get_queue())
 
+#! _get_scheduler ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to return a scheduler.
+'''
 def _get_scheduler() -> Scheduler:
     # tie scheduler to the same queue/connection
     return Scheduler(queue=get_queue(), connection=redis_conn)
 
+#! schedule_post_at ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to schedule a post at a specific time. this is the most important function here.
+
+'''
+# def schedule_post_at(post_id: int, when: datetime, job_id: Optional[str] = None,
+#                      meta: Optional[Dict[str, Any]] = None) -> Job:
+#     run_at = _to_utc_naive(when)
+#     q = get_queue()  # <-- get the live queue
+#     return q.enqueue_at(
+#         run_at,
+#         JOB_FUNC_PATH,
+#         post_id,
+#         job_id=job_id,
+#         retry=_retry_policy(),
+#         meta=meta or {"post_id": post_id}
+#     )
 def schedule_post_at(post_id: int, when: datetime, job_id: Optional[str] = None,
                      meta: Optional[Dict[str, Any]] = None) -> Job:
+    # import the callable, not a string path
+    from app.tasks import publish_post
     run_at = _to_utc_naive(when)
-    q = get_queue()  # <-- get the live queue
-    return q.enqueue_at(
+    scheduler = _get_scheduler()  # Scheduler(queue=get_queue(), connection=redis_conn)
+    return scheduler.enqueue_at(
         run_at,
-        JOB_FUNC_PATH,
+        publish_post,              # <-- callable (not "app.tasks.publish_post")
         post_id,
-        job_id=job_id,
-        retry=_retry_policy(),
-        meta=meta or {"post_id": post_id}
+        job_id=job_id,                 # <-- rq-scheduler uses 'id=' for job_id
+        meta=meta or {"post_id": post_id},
+        # retry=_retry_policy(),     # (passes through to queue when enqueued)
     )
 
+#! list_scheduled_job_ids ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to list scheduled job ids.
+'''
 def list_scheduled_job_ids() -> List[str]:
     return _scheduled_registry().get_job_ids()
 
+#! fetch_job ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to fetch a job by id.
+'''
 def fetch_job(job_id: str) -> Optional[Job]:
     try:
         return Job.fetch(job_id, connection=redis_conn)
     except Exception:
         return None
 
+#! cancel_scheduled ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to cancel a scheduled job.
+'''
 def cancel_scheduled(job_id: str) -> bool:
     job = fetch_job(job_id)
     if not job:
@@ -301,6 +348,10 @@ def cancel_scheduled(job_id: str) -> bool:
     except Exception:
         return False
 
+#! reschedule ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to reschedule a job.
+'''
 def reschedule(job_id: str, new_when: datetime) -> Optional[Job]:
     job = fetch_job(job_id)
     if not job:
@@ -316,6 +367,10 @@ def reschedule(job_id: str, new_when: datetime) -> Optional[Job]:
     q = get_queue()
     return q.enqueue_at(run_at, func_path, *args, **kwargs)
 
+#! ensure_recurring_publish_demo ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to ensure a recurring publish demo.
+'''
 def ensure_recurring_publish_demo(interval_minutes: int = 15) -> str:
     scheduler = _get_scheduler()
     job_id = "recurring:publish_post:demo"
@@ -330,6 +385,10 @@ def ensure_recurring_publish_demo(interval_minutes: int = 15) -> str:
     )
     return job_id
 
+#! ensure_recurring ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to ensure a recurring job.
+'''
 def ensure_recurring(func: str,
                      args: Optional[List[Any]] = None,
                      kwargs: Optional[Dict[str, Any]] = None,
@@ -351,3 +410,16 @@ def ensure_recurring(func: str,
     )
     return job_id
 
+#! cancel_recurring ///////////////////////////////////////////////////////////////////////////
+'''
+This function is used to cancel a recurring job.
+I DO NOT USE THIS FUNCTION. I WILL DELETE THIS FUNCTION IF I DO NOT USE IT.
+'''
+def cancel_recurring(job_id: str) -> bool:
+    scheduler = _get_scheduler()
+    try:
+        job = scheduler.job_class.fetch(job_id, connection=redis_conn)
+        scheduler.cancel(job)
+        return True
+    except Exception:
+        return False

@@ -11,7 +11,7 @@ from app.utils.timezone_helpers import (
     format_utc_with_z,
     to_utc_naive
 )
-from app.scheduler import schedule_post_at
+# from app.scheduler import schedule_post_at
 
 posts_routes = Blueprint('posts', __name__)
 
@@ -325,6 +325,7 @@ def schedule_post(post_id):
     - Persists scheduled_time and sets post.status="scheduled".
     - Uses scheduler helper to enqueue a one-time job at the exact time.
     """
+    from app.scheduler import schedule_post_at
     try:
         post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
         if not post:

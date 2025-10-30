@@ -1,13 +1,14 @@
 # app/tasks.py
 from datetime import datetime
 from flask import current_app
-from app import app as flask_app          # <-- use the global app you already create
+# from app import app as flask_app          # <-- use the global app you already create
 from app.models import db, Post, PostPlatform, SocialPlatform
 from app.extensions.queue import get_queue  # your RQ queue getter
 from app.utils.timezone_helpers import to_utc_naive  # Ensure UTC consistency
+from rq import Retry
 
 # Create one global app for worker context
-flask_app.app_context().push()
+# flask_app.app_context().push()
 
 # =============================================================================
 # TIMEZONE CONVENTION
@@ -65,7 +66,7 @@ def publish_post(post_id: int):
         db.session.commit()
 
         #! Enqueue immediately. If you want scheduled publication, use q.enqueue_at(run_at_utc, publish_post_platform, pp.id)
-        q.enqueue(publish_post_platform, pp.id)
+        q.enqueue(publish_post_platform, pp.id, retry=_retry_policy())
         enqueued_any = True
         current_app.logger.info(f"[tasks.publish_post] enqueued pp_id={pp.id}")
 
@@ -155,6 +156,10 @@ def publish_post_platform(pp_id: int):
 # =============================================================================
 # Helpers
 # =============================================================================
+
+def _retry_policy():
+    return Retry(max=3, interval=[60, 300, 900])
+
 
 def _recompute_parent_post_status(post_id: int):
     """
