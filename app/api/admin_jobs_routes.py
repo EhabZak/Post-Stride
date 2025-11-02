@@ -4,6 +4,7 @@ from rq.job import Job
 from rq.registry import ScheduledJobRegistry
 from app.extensions.queue import redis_conn, get_queue
 from app.models import Post, PostPlatform  # adjust if needed
+from rq_scheduler import Scheduler
 
 admin_jobs_routes = Blueprint("admin_jobs", __name__, url_prefix="/api")
 
@@ -51,9 +52,17 @@ def list_scheduled_jobs():
         q = get_queue()
         if not q:
             raise RuntimeError("Queue is not configured.")
-        reg = ScheduledJobRegistry(queue=q)
-        job_ids = reg.get_job_ids()
-        return jsonify({"queue": q.name, "scheduled_job_ids": job_ids}), 200
+
+        # ✅ This replaces reg = ScheduledJobRegistry(queue=q)
+        reg = Scheduler(queue=q, connection=q.connection)
+
+        jobs = reg.get_jobs()  # like reg.get_job_ids(), but returns Job objects
+        job_list = [
+            {"id": j.id, "func": j.func_name, "meta": j.meta or {}}
+            for j in jobs
+        ]
+
+        return jsonify({"queue": q.name, "scheduled_jobs": job_list}), 200
     except Exception as e:
         current_app.logger.exception("[admin.jobs.scheduled] error")
         return jsonify({"error": str(e)}), 500
