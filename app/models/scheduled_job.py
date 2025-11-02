@@ -33,6 +33,7 @@ class ScheduledJob(db.Model):
     # Relationships
     post = db.relationship('Post', backref='scheduled_jobs')
     platform = db.relationship('SocialPlatform', backref='scheduled_jobs')
+    post = db.relationship('Post', back_populates='scheduled_jobs')
     
     # Table args for production schema
     schema_args = {'schema': SCHEMA} if environment == "production" else {}

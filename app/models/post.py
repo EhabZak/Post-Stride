@@ -18,6 +18,13 @@ class Post(db.Model):
     user = db.relationship('User', back_populates='posts')
     post_platforms = db.relationship('PostPlatform', back_populates='post', cascade='all, delete-orphan')
     post_media = db.relationship('PostMedia', back_populates='post', cascade='all, delete-orphan')
+      # 🔹 Add this relationship to scheduled_jobs
+    scheduled_jobs = db.relationship(
+        'ScheduledJob',
+        back_populates='post',
+        cascade='all, delete-orphan',  # removing from collection deletes child row
+        passive_deletes=True,          # lets DB ON DELETE CASCADE handle parent delete
+    )
 
     # Schema and Indexes
     schema_args = {'schema': SCHEMA} if environment == "production" else {}
