@@ -6,6 +6,7 @@ TIMEZONE CONVENTION:
 - _to_utc_naive() normalizes any datetime to naive UTC for consistency
 - Database stores naive UTC; API layer handles user timezone conversion
 """
+import importlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 
@@ -107,11 +108,19 @@ def fetch_job(job_id: str) -> Optional[Job]:
 This function is used to cancel a scheduled job.
 '''
 def cancel_scheduled(job_id: str) -> bool:
-    job = fetch_job(job_id)
-    if not job:
-        return False
     try:
-        job.cancel()
+        scheduler = _get_scheduler()
+        job = fetch_job(job_id)
+        if job:
+            scheduler.cancel(job)
+            try:
+                job.cancel()
+            except Exception:
+                pass
+            return True
+
+        # If the job object isn't resolvable, fall back to removing by id.
+        scheduler.remove(job_id)
         return True
     except Exception:
         return False
@@ -121,19 +130,50 @@ def cancel_scheduled(job_id: str) -> bool:
 This function is used to reschedule a job.
 '''
 def reschedule(job_id: str, new_when: datetime) -> Optional[Job]:
+    scheduler = _get_scheduler()
     job = fetch_job(job_id)
     if not job:
+        try:
+            scheduler.remove(job_id)
+        except Exception:
+            pass
         return None
     try:
-        job.cancel()
+        scheduler.cancel(job)
     except Exception:
-        pass
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        try:
+            scheduler.remove(job_id)
+        except Exception:
+            pass
     args = job.args or ()
     kwargs = job.kwargs or {}
-    func_path = job.func_name or JOB_FUNC_PATH
+    meta = getattr(job, "meta", None) or {}
+    func = getattr(job, "func", None)
+    if not func:
+        func_name = job.func_name
+        if func_name:
+            module_name, _, attr = func_name.rpartition(".")
+            if module_name and attr:
+                try:
+                    module = importlib.import_module(module_name)
+                    func = getattr(module, attr, None)
+                except Exception:
+                    func = None
+        if not func:
+            func = func_name
     run_at = _to_utc_naive(new_when)
-    q = get_queue()
-    return q.enqueue_at(run_at, func_path, *args, **kwargs)
+    return scheduler.enqueue_at(
+        run_at,
+        func,
+        *args,
+        job_id=job_id,
+        meta=meta,
+        **kwargs
+    )
 
 #! ensure_recurring_publish_demo ///////////////////////////////////////////////////////////////////////////
 '''
