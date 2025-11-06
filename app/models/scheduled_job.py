@@ -1,6 +1,7 @@
 from app.models import db
 from datetime import datetime
 import os
+from app.models.db import add_prefix_for_prod
 from app.utils.timezone_helpers import format_utc_with_z
 
 # Get environment and schema for production
@@ -11,7 +12,7 @@ class ScheduledJob(db.Model):
     __tablename__ = 'scheduled_jobs'
     
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('posts.id', ondelete='CASCADE'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey(add_prefix_for_prod('posts.id'), ondelete='CASCADE'), nullable=False)
     platform_id = db.Column(db.Integer, db.ForeignKey('social_platforms.id'), nullable=True)
     job_type = db.Column(db.String(32), nullable=False)
     queue_name = db.Column(db.String(64), nullable=False)
@@ -31,7 +32,7 @@ class ScheduledJob(db.Model):
     updated_at = db.Column(db.DateTime, server_default=db.func.current_timestamp())
     
     # Relationships
-    post = db.relationship('Post', backref='scheduled_jobs')
+    # post = db.relationship('Post', backref='scheduled_jobs')
     platform = db.relationship('SocialPlatform', backref='scheduled_jobs')
     post = db.relationship('Post', back_populates='scheduled_jobs')
     

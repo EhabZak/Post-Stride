@@ -1,14 +1,13 @@
-# app/tasks.py
 from datetime import datetime
 from flask import current_app
 # from app import app as flask_app          # <-- use the global app you already create
 from app.models import db, Post, PostPlatform, SocialPlatform
 from app.extensions.queue import get_queue  # your RQ queue getter
 from app.utils.timezone_helpers import to_utc_naive  # Ensure UTC consistency
-from rq import Retry
+from rq import Retry, get_current_job
+from app.scheduler import mark_scheduled_job_status  
 
-# Create one global app for worker context
-# flask_app.app_context().push()
+
 
 # =============================================================================
 # TIMEZONE CONVENTION
@@ -21,40 +20,77 @@ from rq import Retry
 # =============================================================================
 
 #! publish_post ///////////////////////////////////////////////////////////////////////////    
+
 def publish_post(post_id: int):
     """
-    Orchestrator for a post: enqueue one job per post_platform row.
-    Idempotent: skips if post not found or already final.
+    If job.meta contains platform_id -> publish that ONE platform inline (no extra enqueue).
+    Otherwise (no platform_id) -> orchestrate by enqueuing each platform row.
+    Also mirrors status to scheduled_jobs via scheduled_job_id in job.meta.
     """
-    #! start log helps you trace worker logs. If a job crashes, you’ll know which post_id was running.
-    current_app.logger.info(f"[tasks.publish_post] start post_id={post_id}")
+    job = get_current_job()
+    meta = (job.meta or {}) if job else {}
+    scheduled_job_id = meta.get("scheduled_job_id")
+    target_platform_id = meta.get("platform_id")
 
-    # 1. Finds the post by ID
+    def _sj(status: str, **kw):
+        if scheduled_job_id:
+            try:
+                mark_scheduled_job_status(scheduled_job_id, status, **kw)
+            except Exception:
+                pass
+
+    current_app.logger.info(f"[tasks.publish_post] start post_id={post_id} platform={target_platform_id}")
+    _sj("started")
+
     post = Post.query.get(post_id)
     if not post:
         current_app.logger.warning(f"[tasks.publish_post] post {post_id} not found")
+        _sj("failed", error_message=f"Post {post_id} not found")
         return
 
-    # 2. Checks if already published/canceled (idempotent guard)
-    #! Prevents duplicate publish attempts. If another job already finished (or the user canceled), do nothing. 
-    # This saves you from race conditions, retries, or accidental double-clicks.
     if getattr(post, "status", None) in ("published", "canceled"):
-        current_app.logger.info(f"[tasks.publish_post] post {post_id} status={post.status}, skip enqueue")
+        current_app.logger.info(f"[tasks.publish_post] post {post_id} status={post.status}, skip")
+        _sj("finished")
         return
 
-    # 3. Gets all platform connections for the post
+    # ------- SINGLE-PLATFORM PATH (scheduled per-platform job) -------
+    if target_platform_id is not None:
+        pp = PostPlatform.query.filter_by(post_id=post.id, platform_id=target_platform_id).first()
+        if not pp:
+            current_app.logger.warning(f"[tasks.publish_post] no PostPlatform for post={post.id} platform={target_platform_id}")
+            _sj("failed", error_message="PostPlatform row not found")
+            return
+
+        # skip if already done
+        if pp.status in ("publishing", "published", "skipped"):
+            current_app.logger.info(f"[tasks.publish_post] already handled pp_id={pp.id} status={pp.status}")
+            _sj("finished")
+            return
+
+        # run inline for this platform (no extra enqueue)
+        try:
+            pp.status = "publishing"
+            db.session.commit()
+            publish_post_platform(pp.id)  # <-- synchronous publish for the targeted platform
+            _recompute_parent_post_status(post.id)
+            _sj("finished")
+            current_app.logger.info(f"[tasks.publish_post] finished inline platform publish pp_id={pp.id}")
+        except Exception as e:
+            current_app.logger.exception("single-platform publish failed")
+            _sj("failed", error_message=str(e))
+        return
+
+    # ------- ORCHESTRATOR PATH (no specific platform in meta) -------
     pps = PostPlatform.query.filter_by(post_id=post.id).all()
     if not pps:
-        # No platforms attached — consider the post published immediately (or keep as draft)
         current_app.logger.info(f"[tasks.publish_post] post {post_id} has no platforms; marking published")
         post.status = "published"
-        # If your Post model has published_at, set it; otherwise remove this line
         if hasattr(post, "published_at"):
             post.published_at = datetime.utcnow()
         db.session.commit()
+        _sj("finished")
         return
 
-    # 4. Enqueue one job per platform row
     q = get_queue()
     enqueued_any = False
     for pp in pps:
@@ -65,17 +101,17 @@ def publish_post(post_id: int):
         pp.status = "queued"
         db.session.commit()
 
-        #! Enqueue immediately. If you want scheduled publication, use q.enqueue_at(run_at_utc, publish_post_platform, pp.id)
+        # enqueue per-platform worker
         q.enqueue(publish_post_platform, pp.id, retry=_retry_policy())
         enqueued_any = True
         current_app.logger.info(f"[tasks.publish_post] enqueued pp_id={pp.id}")
 
-    # 5. Update parent post aggregate status
     _recompute_parent_post_status(post.id)
 
+    # Orchestrator job has done its work; mark finished even if nothing new was enqueued
+    _sj("finished")
     if not enqueued_any:
         current_app.logger.info(f"[tasks.publish_post] nothing enqueued for post {post_id}")
-
 
 # =============================================================================
 # Worker job (one job per post_platform)
@@ -152,7 +188,6 @@ def publish_post_platform(pp_id: int):
         _recompute_parent_post_status(post.id)
         return {"ok": False, "pp_id": pp_id, "error": str(e)}
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
@@ -182,7 +217,8 @@ def _recompute_parent_post_status(post_id: int):
         if hasattr(post, "published_at") and not getattr(post, "published_at", None):
             post.published_at = datetime.utcnow()
     elif "published" in statuses and ("failed" in statuses or "skipped" in statuses):
-        # Some succeeded, some failed/skipped
+        # Some succeeded, some failed/
+        
         post.status = "partially_published"
         if hasattr(post, "published_at") and not getattr(post, "published_at", None):
             post.published_at = datetime.utcnow()

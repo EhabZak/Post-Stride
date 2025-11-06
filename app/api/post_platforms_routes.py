@@ -48,7 +48,7 @@ def get_post_platforms(post_id):
     query = PostPlatform.query.filter_by(post_id=post_id)
     
     if status:
-        valid_statuses = ['pending', 'queued', 'publishing', 'published', 'failed', 'skipped']
+        valid_statuses = ['pending', 'queued', 'publishing', 'published', 'failed', 'skipped','canceled']
         if status not in valid_statuses:
             return jsonify({'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
         query = query.filter_by(status=status)
@@ -190,7 +190,7 @@ def update_post_platform(post_id, platform_id):
         post_platform.media_urls = data['media_urls']
     
     if 'status' in data:
-        valid_statuses = ['pending', 'queued', 'publishing', 'published', 'failed', 'skipped']
+        valid_statuses = ['pending', 'queued', 'publishing', 'published', 'failed', 'skipped','canceled']
         if data['status'] not in valid_statuses:
             return jsonify({'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
         post_platform.status = data['status']
@@ -310,40 +310,63 @@ def retry_post_platform(post_id, platform_id):
         return jsonify({'error': 'Failed to retry post'}), 500
 
 #! Cancel Post Platform ///////////////////////////////////////////////////////////////////////////
+# 
 @post_platforms_routes.route('/posts/<int:post_id>/platforms/<int:platform_id>/cancel', methods=['POST'])
 @login_required
 def cancel_post_platform(post_id, platform_id):
     """
-    POST /api/posts/:post_id/platforms/:platform_id/cancel – set status=skipped
+    POST /api/posts/:post_id/platforms/:platform_id/cancel
+    - Ownership check (only post owner can cancel)
+    - Prevent canceling already published
+    - Cancel matching scheduled jobs in Redis/RQ
+    - Mark this platform as 'skipped' (or 'canceled')
+    - Recompute parent post status
     """
-    # Verify post exists and belongs to current user
+    from app.models import db, Post, PostPlatform
+    from app.services.posts_cancel import cancel_single_platform_future  # service layer from earlier
+
+    # Verify post exists AND belongs to current user (ownership check)
     post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
     if not post:
         return jsonify({'error': 'Post not found'}), 404
 
-    post_platform = PostPlatform.query.filter_by(
-        post_id=post_id, 
-        platform_id=platform_id
-    ).first()
-    
-    if not post_platform:
+    # Fetch the specific post_platform row
+    pp = PostPlatform.query.filter_by(post_id=post_id, platform_id=platform_id).first()
+    if not pp:
         return jsonify({'error': 'Post-platform connection not found'}), 404
 
-    # Don't allow canceling already published posts
-    if post_platform.status == 'published':
+    # Don't allow canceling already published deliveries
+    if pp.status == 'published':
         return jsonify({'error': 'Cannot cancel already published post'}), 400
 
-    post_platform.status = 'skipped'
+    # Cancel scheduled jobs + set platform status + recompute parent status (all in one transaction)
+    # Change as_status to "canceled" if you prefer that label over "skipped"
+    # result = cancel_single_platform_future(post_id=post_id, platform_id=platform_id, as_status="skipped")
 
+    # # Reload latest objects to return fresh state
+    # db.session.refresh(pp)
+    # db.session.refresh(post)
+
+    # return jsonify({
+    #     'ok': True,
+    #     'message': 'Platform canceled successfully',
+    #     'attempted_job_cancels': result.get('attempted_jobs', 0),
+    #     'post_status': result.get('post_status'),
+    #     'post_platform': pp.to_dict()
+    # }), 200
     try:
+        result = cancel_single_platform_future(post_id, platform_id, as_status="skipped")  # or "canceled"
         db.session.commit()
         return jsonify({
-            'message': 'Post cancelled successfully',
-            'post_platform': post_platform.to_dict()
-        })
+            'ok': True,
+            'message': 'Platform canceled successfully',
+            **result,
+            'post_platform': pp.to_dict(),
+        }), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Failed to cancel post'}), 500
+        return jsonify({'error': 'Failed to cancel post', 'detail': str(e)}), 500
+
 
 #! Cross-Post View ///////////////////////////////////////////////////////////////////////////
 @post_platforms_routes.route('/', methods=['GET'])
@@ -366,7 +389,7 @@ def get_cross_post_view():
 
     # Apply filters
     if status:
-        valid_statuses = ['pending', 'queued', 'publishing', 'published', 'failed', 'skipped']
+        valid_statuses = ['pending', 'queued', 'publishing', 'published', 'failed', 'skipped','canceled']
         if status not in valid_statuses:
             return jsonify({'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
         query = query.filter(PostPlatform.status == status)
@@ -410,3 +433,8 @@ def get_cross_post_view():
             'has_prev': paginated.has_prev
         }
     })
+
+
+
+
+

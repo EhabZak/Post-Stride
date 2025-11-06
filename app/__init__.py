@@ -19,6 +19,19 @@ from .seeds import seed_commands
 from .config import Config
 from .extensions.queue import init_redis
 
+#! //// ///////////////////////////////////////////////////////////////////////////
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_conn, conn_record):
+    try:
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+    except Exception:
+        pass
+
 #! Flask App ///////////////////////////////////////////////////////////////////////////
 app = Flask(__name__, static_folder='../react-app/build', static_url_path='/')
 

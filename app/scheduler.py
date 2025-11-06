@@ -58,22 +58,6 @@ This function is used to schedule a post at a specific time. this is the most im
 
 '''
 
-# def schedule_post_at(post_id: int, when: datetime, job_id: Optional[str] = None,
-#                      meta: Optional[Dict[str, Any]] = None) -> Job:
-#     # import the callable, not a string path
-#     from app.tasks import publish_post
-#     run_at = _to_utc_naive(when)
-#     scheduler = _get_scheduler()  # Scheduler(queue=get_queue(), connection=redis_conn)
-#     return scheduler.enqueue_at(
-#         run_at,
-#         publish_post,              # <-- callable (not "app.tasks.publish_post")
-#         post_id,
-#         job_id=job_id,                 # <-- rq-scheduler uses 'id=' for job_id
-#         meta=meta or {"post_id": post_id},
-#         # retry=_retry_policy(),     # (passes through to queue when enqueued)
-#     )
-
-
 def schedule_post_at(
     post_id: int,
     when: datetime,
@@ -121,7 +105,7 @@ def schedule_post_at(
 
     # 2) Compute stable job_id if not provided
     if not job_id:
-        job_id = f"{job_type}:{post_id}:{sj.id}:{int(when_utc.timestamp())}"
+        job_id = f"{job_type}-{post_id}-{sj.id}-{int(when_utc.timestamp())}"
 
     # Merge meta and inject identifiers for the worker
     meta_payload = {
@@ -146,8 +130,6 @@ def schedule_post_at(
     db.session.commit()
 
     return job
-
-
 
 
 #! list_scheduled_job_ids ///////////////////////////////////////////////////////////////////////////
@@ -235,7 +217,7 @@ def cancel_scheduled(scheduled_job_id: int) -> bool:
     # update DB status only (don’t touch sj.post_id)
     from app.scheduler import mark_scheduled_job_status  # if helper is in same file you can call directly
     mark_scheduled_job_status(scheduled_job_id, "canceled")
-    db.session.commit()
+    # db.session.commit()
     return ok
 
 #! reschedule ///////////////////////////////////////////////////////////////////////////
@@ -452,3 +434,48 @@ def cancel_rq_only(rq_job_id: str) -> bool:
             pass
 
     return ok
+'''
+This function is used to mark a scheduled job status.
+'''
+
+
+def mark_scheduled_job_status(
+    scheduled_job_id: int,
+    status: str,
+    *,
+    error_message: Optional[str] = None,
+    traceback: Optional[str] = None,
+    attempts: Optional[int] = None,
+) -> None:
+    """
+    Update scheduled_jobs.status and standard timestamps.
+    Allowed statuses: 'scheduled','queued','started','finished','failed','canceled'
+    Safe to call multiple times.
+    """
+    # Local imports avoid circulars
+    from app.models import db
+    from app.models.scheduled_job import ScheduledJob
+
+    sj = ScheduledJob.query.get(scheduled_job_id)
+    if not sj:
+        return
+
+    now = datetime.utcnow()
+    sj.status = status
+
+    if status == "started":
+        sj.started_at = now
+    elif status in ("finished", "failed"):
+        sj.finished_at = now
+    elif status == "canceled":
+        sj.canceled_at = now
+    # 'scheduled' / 'queued' don’t change timestamps here
+
+    if attempts is not None:
+        sj.attempts = attempts
+    if error_message:
+        sj.error_message = error_message
+    if traceback:
+        sj.traceback = traceback
+
+    db.session.commit()

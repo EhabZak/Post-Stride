@@ -11,6 +11,7 @@ from app.utils.timezone_helpers import (
     format_utc_with_z,
     to_utc_naive
 )
+
 # from app.scheduler import schedule_post_at
 
 posts_routes = Blueprint('posts', __name__)
@@ -352,31 +353,68 @@ def schedule_post(post_id):
         post.updated_at = datetime.utcnow()
         db.session.commit()
 
-        # Create a stable job id (handy for cancel/reschedule later)
-        job_id = f"publish_post-{post.id}-{int(when_utc_naive.timestamp())}"
+    #     # Create a stable job id (handy for cancel/reschedule later)
+    #     job_id = f"publish_post-{post.id}-{int(when_utc_naive.timestamp())}"
 
-        # Enqueue the publish job exactly at that time via the scheduler helper
-        # (This wraps Queue.enqueue_at with your standard retry + meta)
-        job = schedule_post_at(
-            post_id=post.id,
-            when=when_utc_naive,
-            job_id=job_id,
-            meta={"post_id": post.id}
-        )
+    #     # Enqueue the publish job exactly at that time via the scheduler helper
+    #     # (This wraps Queue.enqueue_at with your standard retry + meta)
+    #     job = schedule_post_at(
+    #         post_id=post.id,
+    #         when=when_utc_naive,
+    #         job_id=job_id,
+    #         meta={"post_id": post.id}
+    #     )
 
-        # Return attached platforms for convenience
+    #     # Return attached platforms for convenience
+    #     pps = PostPlatform.query.filter_by(post_id=post.id).all()
+    #     platforms = [{"id": pp.platform_id, "name": pp.platform.name} for pp in pps]
+
+    #     # Return dual time format (UTC + user local time)
+    #     time_detail = format_dual_time(when_utc_naive, current_user.timezone)
+
+    #     return jsonify({
+    #         "message": "post scheduled",
+    #         "post_id": post.id,
+    #         "scheduled_time": format_utc_with_z(when_utc_naive),
+    #         "scheduled_time_detail": time_detail,
+    #         "rq_job_id": job.id,
+    #         "platforms": platforms
+    #     }), 200
+
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'error': str(e)}), 500
+    # Get target platforms for this post
         pps = PostPlatform.query.filter_by(post_id=post.id).all()
-        platforms = [{"id": pp.platform_id, "name": pp.platform.name} for pp in pps]
+        if not pps:
+            return jsonify({'error': 'No platforms attached to this post'}), 400
 
-        # Return dual time format (UTC + user local time)
+        jobs = []
+        for pp in pps:
+            plat_id = pp.platform_id
+            # Make job_id unique per platform
+            job_id = f"publish_post-{post.id}-{plat_id}-{int(when_utc_naive.timestamp())}"
+            job = schedule_post_at(
+                post_id=post.id,
+                when=when_utc_naive,
+                platform_id=plat_id,                       # 🔹 key change
+                job_id=job_id,
+                meta={"post_id": post.id, "platform_id": plat_id}
+            )
+            jobs.append({
+                "platform_id": plat_id,
+                "rq_job_id": job.id
+            })
+
         time_detail = format_dual_time(when_utc_naive, current_user.timezone)
+        platforms = [{"id": pp.platform_id, "name": pp.platform.name} for pp in pps]
 
         return jsonify({
             "message": "post scheduled",
             "post_id": post.id,
             "scheduled_time": format_utc_with_z(when_utc_naive),
             "scheduled_time_detail": time_detail,
-            "rq_job_id": job.id,
+            "jobs": jobs,                                  # one entry per platform
             "platforms": platforms
         }), 200
 
@@ -521,3 +559,25 @@ POST /api/posts/:id/cancel – set status=canceled. ok
 POST /api/posts/:id/duplicate – clone post (clear per-platform ids/statuses). ok
 
 """
+
+#! Cancel the whole post’s future publishing  ///////////////////////////////////////////////////////////////////////////
+@posts_routes.route("/<int:post_id>/cancel", methods=["POST"])
+@login_required
+def cancel_post_future(post_id):
+    """
+    Cancel all future publishing tasks for a post.
+    Only the post owner can perform this action.
+    """
+    from app.models import Post
+    from app.services.posts_cancel import cancel_entire_post_future
+
+    # Verify post exists and belongs to current user
+    post = Post.query.get(post_id)
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    if post.user_id != current_user.id:
+        return jsonify({'error': 'Forbidden: You do not own this post'}), 403
+
+    # Proceed to cancel all future jobs for this post
+    result = cancel_entire_post_future(post_id, as_status="canceled")
+    return jsonify({"ok": True, **result}), 200

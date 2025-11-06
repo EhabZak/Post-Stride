@@ -23,7 +23,7 @@ class Post(db.Model):
         'ScheduledJob',
         back_populates='post',
         cascade='all, delete-orphan',  # removing from collection deletes child row
-        passive_deletes=True,          # lets DB ON DELETE CASCADE handle parent delete
+        # passive_deletes=True,          # lets DB ON DELETE CASCADE handle parent delete
     )
 
     # Schema and Indexes
