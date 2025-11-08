@@ -225,8 +225,6 @@ def publish_post(post_id: int):
         current_app.logger.info(f"[tasks.publish_post] nothing enqueued for post {post_id}")
 
 
-
-
 # =============================================================================
 # Worker job (one job per post_platform)
 # =============================================================================

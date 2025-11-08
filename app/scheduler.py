@@ -173,14 +173,55 @@ This function is used to cancel a scheduled job.
 #         return True
 #     except Exception:
 #         return False
+# def cancel_scheduled(scheduled_job_id: int) -> bool:
+#     """
+#     Cancel a scheduled job by its DB id.
+#     - Best-effort cancel in rq-scheduler/RQ
+#     - Mark scheduled_jobs.status='canceled'
+#     - Does NOT delete the Post
+#     """
+#     # local imports to avoid circulars
+#     from app.models import db
+#     from app.models.scheduled_job import ScheduledJob
+
+#     sj = ScheduledJob.query.get(scheduled_job_id)
+#     if not sj:
+#         return False
+
+#     # already terminal? treat as success/no-op
+#     if sj.status in ("finished", "failed", "canceled","skipped","published"):
+#         return True
+
+#     ok = True
+#     # try cancel in RQ
+#     try:
+#         scheduler = _get_scheduler()
+#         job = fetch_job(sj.rq_job_id) if sj.rq_job_id else None
+#         if job:
+#             try:
+#                 scheduler.cancel(job)
+#             except Exception:
+#                 pass
+#             try:
+#                 job.cancel()
+#             except Exception:
+#                 pass
+#         try:
+#             if sj.rq_job_id:
+#                 scheduler.remove(sj.rq_job_id)
+#         except Exception:
+#             pass
+#     except Exception:
+#         ok = False
+
+#     # update DB status only (don’t touch sj.post_id)
+#     from app.scheduler import mark_scheduled_job_status  # if helper is in same file you can call directly
+#     mark_scheduled_job_status(scheduled_job_id, "canceled")
+#     # db.session.commit()
+#     return ok
+
+    #///////3 to fix the queen stuck scheudled jobs issue ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def cancel_scheduled(scheduled_job_id: int) -> bool:
-    """
-    Cancel a scheduled job by its DB id.
-    - Best-effort cancel in rq-scheduler/RQ
-    - Mark scheduled_jobs.status='canceled'
-    - Does NOT delete the Post
-    """
-    # local imports to avoid circulars
     from app.models import db
     from app.models.scheduled_job import ScheduledJob
 
@@ -188,37 +229,56 @@ def cancel_scheduled(scheduled_job_id: int) -> bool:
     if not sj:
         return False
 
-    # already terminal? treat as success/no-op
-    if sj.status in ("finished", "failed", "canceled","skipped","published"):
+    # Only treat truly terminal states as no-ops (skip is NOT terminal; it must still be removed from Redis)
+    if sj.status in ("finished", "failed", "canceled", "published"):
         return True
 
     ok = True
-    # try cancel in RQ
     try:
         scheduler = _get_scheduler()
         job = fetch_job(sj.rq_job_id) if sj.rq_job_id else None
+
+        # Prefer scheduler cancel; support different rq-scheduler versions
         if job:
             try:
                 scheduler.cancel(job)
-            except Exception:
-                pass
+            except TypeError:
+                try:
+                    scheduler.cancel(job.id)
+                except AttributeError:
+                    scheduler.cancel_job(job.id)
+
+            # As a fallback, also ask RQ to cancel the job
             try:
                 job.cancel()
             except Exception:
                 pass
+
+        # Belt-and-suspenders: remove by id if still present
         try:
             if sj.rq_job_id:
-                scheduler.remove(sj.rq_job_id)
+                try:
+                    scheduler.cancel(sj.rq_job_id)
+                except AttributeError:
+                    try:
+                        scheduler.cancel_job(sj.rq_job_id)
+                    except Exception:
+                        pass
+                try:
+                    scheduler.remove(sj.rq_job_id)  # older API
+                except Exception:
+                    pass
         except Exception:
             pass
     except Exception:
         ok = False
 
-    # update DB status only (don’t touch sj.post_id)
-    from app.scheduler import mark_scheduled_job_status  # if helper is in same file you can call directly
+    # Mark as canceled (not just skipped) once we've attempted Redis cleanup
+    from app.scheduler import mark_scheduled_job_status
     mark_scheduled_job_status(scheduled_job_id, "canceled")
-    # db.session.commit()
     return ok
+
+
 
 #! reschedule ///////////////////////////////////////////////////////////////////////////
 '''
