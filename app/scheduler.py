@@ -9,7 +9,7 @@ TIMEZONE CONVENTION:
 import importlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
-
+from flask import current_app
 from rq import Retry
 from rq.job import Job
 from rq.registry import ScheduledJobRegistry
@@ -57,7 +57,7 @@ def _get_scheduler() -> Scheduler:
 This function is used to schedule a post at a specific time. this is the most important function here.
 
 '''
-
+#//////1 working version ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def schedule_post_at(
     post_id: int,
     when: datetime,
@@ -189,7 +189,7 @@ def cancel_scheduled(scheduled_job_id: int) -> bool:
         return False
 
     # already terminal? treat as success/no-op
-    if sj.status in ("finished", "failed", "canceled"):
+    if sj.status in ("finished", "failed", "canceled","skipped","published"):
         return True
 
     ok = True
@@ -437,8 +437,6 @@ def cancel_rq_only(rq_job_id: str) -> bool:
 '''
 This function is used to mark a scheduled job status.
 '''
-
-
 def mark_scheduled_job_status(
     scheduled_job_id: int,
     status: str,
