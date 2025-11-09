@@ -220,7 +220,7 @@ This function is used to cancel a scheduled job.
 #     # db.session.commit()
 #     return ok
 
-    #///////3 to fix the queen stuck scheudled jobs issue ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    #///////3 to fix the queues stuck scheudled jobs issue ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def cancel_scheduled(scheduled_job_id: int) -> bool:
     from app.models import db
     from app.models.scheduled_job import ScheduledJob
@@ -329,19 +329,15 @@ This function is used to reschedule a job.
 #         meta=meta,
 #         **kwargs
 #     )
-def reschedule(
-    scheduled_job_id: int,
-    new_when: datetime,
-    *,
-    created_by_user_id: Optional[int] = None,
-):
-    """
+
+"""
     Reschedule by DB id:
     - Cancel old job (best-effort) and mark old row 'canceled'
     - Create a NEW scheduled_jobs row with the new time
     - Enqueue new RQ job and persist rq_job_id/enqueued_at
     - RETURN the new RQ Job object
-    """
+"""
+def reschedule(scheduled_job_id: int, new_when: datetime, *, created_by_user_id: Optional[int] = None):
     from app.models import db
     from app.models.scheduled_job import ScheduledJob
     from app.tasks import publish_post
@@ -351,26 +347,19 @@ def reschedule(
         return None
 
     # cancel old if not terminal
-    if old.status in ("scheduled", "queued", "started"):
+    if old.status in ("scheduled", "queued", "pending"):  # use your statuses
         try:
             scheduler = _get_scheduler()
             job = fetch_job(old.rq_job_id) if old.rq_job_id else None
             if job:
-                try:
-                    scheduler.cancel(job)
-                except Exception:
-                    pass
-                try:
-                    job.cancel()
-                except Exception:
-                    pass
+                try: scheduler.cancel(job)
+                except Exception: pass
+                try: job.cancel()
+                except Exception: pass
             try:
-                if old.rq_job_id:
-                    scheduler.remove(old.rq_job_id)
-            except Exception:
-                pass
-        except Exception:
-            pass
+                if old.rq_job_id: scheduler.remove(old.rq_job_id)
+            except Exception: pass
+        except Exception: pass
         mark_scheduled_job_status(old.id, "canceled")
         db.session.commit()
 
@@ -391,23 +380,27 @@ def reschedule(
     db.session.add(new_sj)
     db.session.commit()
 
-    # enqueue new job
+    # enqueue new job (NO colons in job_id)
     scheduler = _get_scheduler()
-    job_id = f"{new_sj.job_type}:{new_sj.post_id}:{new_sj.id}:{int(when_utc.timestamp())}"
+    ts = int(when_utc.timestamp())
+    job_id = f"{new_sj.job_type}-{new_sj.post_id}-{new_sj.platform_id or 'all'}-{new_sj.id}-{ts}"
+
     job = scheduler.enqueue_at(
         when_utc,
-        publish_post,
-        new_sj.post_id,
-        job_id=job_id,
-        meta={"post_id": new_sj.post_id, "scheduled_job_id": new_sj.id},
+        publish_post,                 # def publish_post(post_id: int)
+        new_sj.post_id,               # ONLY positional arg
+        job_id=job_id,                # <- sanitized
+        meta={"post_id": new_sj.post_id, "scheduled_job_id": new_sj.id,
+              **({"platform_id": new_sj.platform_id} if new_sj.platform_id is not None else {})},
+        # retry=_retry_policy() if new_sj.max_retries else None,
     )
 
-    # persist RQ metadata
     new_sj.rq_job_id = job.id
     new_sj.enqueued_at = datetime.utcnow()
     db.session.commit()
-
     return job
+
+    
 
 #! ensure_recurring_publish_demo ///////////////////////////////////////////////////////////////////////////
 '''

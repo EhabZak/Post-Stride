@@ -10,7 +10,7 @@ from app.scheduler import cancel_scheduled
 
 CANCEL_TARGET_STATES = {"pending", "queued", "scheduled"}  # safe to flip to canceled/skipped
 
-
+# this function is used to mark the platforms as canceled/skipped
 def _mark_platforms_canceled(post_id: int, platform_ids: Optional[Iterable[int]] = None, as_status: str = "canceled") -> int:
     """
     Mark future/unrun platform deliveries as canceled/skipped.
@@ -28,7 +28,7 @@ def _mark_platforms_canceled(post_id: int, platform_ids: Optional[Iterable[int]]
         updated += 1
     return updated
 
-
+# this function is used to cancel the scheduled jobs
 def _cancel_scheduled_jobs_for(post_id: int, platform_ids: Optional[Iterable[int]] = None) -> int:
     """
     Best-effort: cancel all ScheduledJob rows that match (post_id [, platform_ids])
@@ -53,7 +53,7 @@ def _cancel_scheduled_jobs_for(post_id: int, platform_ids: Optional[Iterable[int
     return attempted
 
 
-
+# this function is used to recompute the post status
 def _recompute_post_status(post_id: int) -> str:
     """
     Aggregate child states and set posts.status accordingly.
@@ -89,7 +89,7 @@ def _recompute_post_status(post_id: int) -> str:
             # else keep existing
     return post.status
 
-
+# this function is used to cancel the entire post future
 def cancel_entire_post_future(post_id: int, as_status: str = "canceled") -> dict:
     """
     Cancel all not-yet-run deliveries for this post (across all platforms),
@@ -105,7 +105,7 @@ def cancel_entire_post_future(post_id: int, as_status: str = "canceled") -> dict
     new_status = _recompute_post_status(post_id)
     return {"attempted_jobs": attempted_jobs, "platforms_updated": updated_pp, "post_status": new_status}
 
-
+# this function is used to cancel the single platform future        
 def cancel_single_platform_future(post_id: int, platform_id: int, as_status: str = "canceled") -> dict:
     """
     Cancel future delivery for a single platform of a post.
@@ -123,7 +123,7 @@ def cancel_single_platform_future(post_id: int, platform_id: int, as_status: str
 
     # app/services/posts_cancel.py
 
-
+# this function is used to cancel the entire post future
 def cancel_entire_post_future(post_id: int, as_status: str = "canceled") -> dict:
     attempted_jobs = _cancel_scheduled_jobs_for(post_id)
     updated_pp = _mark_platforms_canceled(post_id, as_status=as_status)

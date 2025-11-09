@@ -581,3 +581,128 @@ def cancel_post_future(post_id):
     # Proceed to cancel all future jobs for this post
     result = cancel_entire_post_future(post_id, as_status="canceled")
     return jsonify({"ok": True, **result}), 200
+
+    
+#! Reschedule a post ///////////////////////////////////////////////////////////////////////////
+
+# POST /api/posts/:post_id/reschedule
+# @posts_routes.route("/<int:post_id>/reschedule", methods=["POST"])
+# @login_required
+# def reschedule_post(post_id):
+#     from dateutil.parser import isoparse
+#     from app.models import Post, ScheduledJob, db
+#     # auth: user owns the post
+#     post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
+#     if not post: return jsonify({"error":"Post not found"}), 404
+
+#     data = request.get_json() or {}
+#     new_when = isoparse(data["scheduled_time"])  # "2025-11-10T14:30:00Z"
+#     platform_ids = set(data.get("platform_ids") or [])  # optional
+
+#     # pick jobs to move: not terminal & (in selected platforms if provided)
+#     q = ScheduledJob.query.filter(
+#         ScheduledJob.post_id==post_id,
+#         ~ScheduledJob.status.in_(("published","failed","canceled"))
+#     )
+#     if platform_ids:
+#         q = q.filter(ScheduledJob.platform_id.in_(platform_ids))
+#     jobs = q.all()
+#     if not jobs: return jsonify({"ok": True, "rescheduled": 0}), 200
+
+#     # reschedule each
+#     from app.scheduler import reschedule  # your helper
+#     count = 0
+#     for sj in jobs:
+#         reschedule(sj.id, new_when, created_by_user_id=current_user.id)
+#         count += 1
+
+#     return jsonify({"ok": True, "rescheduled": count}), 200
+@posts_routes.route("/<int:post_id>/reschedule", methods=["POST"])
+@login_required
+def reschedule_post(post_id):
+    """
+    POST /api/posts/:post_id/reschedule
+    Body: {
+      "scheduled_time": "2025-11-10T14:30:00Z",
+      "platform_ids": [1,3,5]   // optional; omit to reschedule all active
+    }
+
+    - Verifies ownership
+    - Rejects past times (UTC)
+    - Reschedules all non-terminal jobs for the given post/platforms
+    - Recomputes posts.scheduled_time = earliest of remaining active jobs
+    """
+    from datetime import datetime
+    from dateutil.parser import isoparse
+    from app.models import db, Post
+    from app.models.scheduled_job import ScheduledJob
+    from app.scheduler import reschedule as reschedule_one  # your existing helper
+    # If you have _to_utc_naive already available in this module, import it; otherwise inline:
+    # from app.scheduler import _to_utc_naive
+
+    # 1) Ownership check
+    post = Post.query.filter_by(id=post_id, user_id=current_user.id).first()
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+
+    # 2) Parse input
+    data = request.get_json() or {}
+    iso = data.get("scheduled_time")
+    if not iso:
+        return jsonify({"error": "scheduled_time is required (ISO8601, e.g., 2025-11-10T14:30:00Z)"}), 400
+
+    try:
+        new_when = isoparse(iso)  # may be aware or naive
+    except Exception:
+        return jsonify({"error": "Invalid scheduled_time format"}), 400
+
+    # Normalize to UTC-naive the same way your scheduler does
+    when_utc = to_utc_naive(new_when)
+
+    # 3) Reject past/now times (UTC)
+    if when_utc <= datetime.utcnow():
+        return jsonify({"error": "scheduled_time must be in the future (UTC)"}), 400
+
+    platform_ids = set(data.get("platform_ids") or [])
+
+    # 4) Pick non-terminal jobs to move
+    active_statuses = ("scheduled", "pending")  # your active states
+    q = ScheduledJob.query.filter(
+        ScheduledJob.post_id == post_id,
+        ScheduledJob.status.in_(active_statuses),
+    )
+    if platform_ids:
+        q = q.filter(ScheduledJob.platform_id.in_(platform_ids))
+    active_jobs = q.all()
+
+    # If nothing to reschedule, you can choose to schedule fresh here or just return
+    if not active_jobs:
+        # No active jobs matched; leave as no-op
+        return jsonify({"ok": True, "rescheduled": 0, "post_scheduled_time": post.scheduled_time}), 200
+
+    # 5) Reschedule each selected job
+    count = 0
+    for sj in active_jobs:
+        reschedule_one(sj.id, when_utc, created_by_user_id=current_user.id)
+        count += 1
+
+    # 6) Recompute the post's displayed scheduled_time (earliest active)
+    next_times = (
+        db.session.query(ScheduledJob.scheduled_for)
+        .filter(
+            ScheduledJob.post_id == post_id,
+            ScheduledJob.status.in_(active_statuses),
+        )
+        .all()
+    )
+    post.scheduled_time = (min(t[0] for t in next_times) if next_times else None)
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "rescheduled": count,
+        "new_time": when_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "post_scheduled_time": (
+            post.scheduled_time.strftime("%Y-%m-%dT%H:%M:%SZ") if post.scheduled_time else None
+        ),
+    }), 200
