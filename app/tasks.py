@@ -224,7 +224,6 @@ def publish_post(post_id: int):
     if not enqueued_any:
         current_app.logger.info(f"[tasks.publish_post] nothing enqueued for post {post_id}")
 
-
 # =============================================================================
 # Worker job (one job per post_platform)
 # =============================================================================
@@ -245,7 +244,10 @@ def publish_post_platform(pp_id: int):
 
     #! Idempotency guard
     # Prevents duplicate publish attempts for the same row.
-    if pp.status in ("publishing", "published", "skipped"):
+    # if pp.status in ("publishing", "published", "skipped"):
+    #     current_app.logger.info(f"[tasks.publish_pp] skip pp_id={pp_id} status={pp.status}")
+    #     return
+    if pp.status in ("published", "skipped"):
         current_app.logger.info(f"[tasks.publish_pp] skip pp_id={pp_id} status={pp.status}")
         return
 
