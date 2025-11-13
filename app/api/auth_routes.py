@@ -6,7 +6,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 
 auth_routes = Blueprint('auth', __name__)
 
-
+#! Validation Errors to Error Messages ///////////////////////////////////////////////////////////////////////////
 def validation_errors_to_error_messages(validation_errors):
     """
     Simple function that turns the WTForms validation errors into a simple list
@@ -17,7 +17,7 @@ def validation_errors_to_error_messages(validation_errors):
             errorMessages.append(f'{field} : {error}')
     return errorMessages
 
-
+#! Authenticate ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/')
 def authenticate():
     """
@@ -27,7 +27,17 @@ def authenticate():
         return current_user.to_dict()
     return {'errors': ['Unauthorized']}
 
+#! Current User Profile ///////////////////////////////////////////////////////////////////////////
+@auth_routes.route('/me')
+@login_required
+def get_current_user():
+    """
+    GET /api/auth/me – current user profile
+    Returns the profile information of the currently authenticated user
+    """
+    return jsonify({'user': current_user.to_dict()})
 
+#! Login ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/login', methods=['POST'])
 def login():
     """
@@ -44,7 +54,7 @@ def login():
         return user.to_dict()
     return {'errors': validation_errors_to_error_messages(form.errors)}, 401
 
-
+#! Logout ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/logout')
 def logout():
     """
@@ -53,7 +63,7 @@ def logout():
     logout_user()
     return {'message': 'User logged out'}
 
-
+#! Signup ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/signup', methods=['POST'])
 def sign_up():
     """
@@ -65,7 +75,8 @@ def sign_up():
         user = User(
             username=form.data['username'],
             email=form.data['email'],
-            password=form.data['password']
+            password=form.data['password'],
+            timezone=form.data['timezone']
         )
         db.session.add(user)
         db.session.commit()
@@ -73,10 +84,19 @@ def sign_up():
         return user.to_dict()
     return {'errors': validation_errors_to_error_messages(form.errors)}, 401
 
-
+#! Unauthorized ///////////////////////////////////////////////////////////////////////////
 @auth_routes.route('/unauthorized')
 def unauthorized():
     """
     Returns unauthorized JSON when flask-login authentication fails
     """
     return {'errors': ['Unauthorized']}, 401
+
+
+"""
+    auth_routes.py this is just the file name 
+    POST /api/auth/login – email+password → tokens/session. ok 
+    POST /api/auth/logout – invalidate token/session. ok 
+    POST /api/auth/refresh – rotate access token. No need. we are not using JWT tokens.
+    GET /api/auth/me – current user profile. ok
+    """

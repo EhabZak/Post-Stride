@@ -13,6 +13,12 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(40), nullable=False, unique=True)
     email = db.Column(db.String(255), nullable=False, unique=True)
     hashed_password = db.Column(db.String(255), nullable=False)
+    timezone = db.Column(db.String(64), nullable=False, server_default='UTC')  # IANA timezone name
+
+    # Relationships
+    user_platforms = db.relationship('UserPlatform', back_populates='user', cascade='all, delete-orphan')
+    posts = db.relationship('Post', back_populates='user', cascade='all, delete-orphan')
+    media = db.relationship('Media', back_populates='user', cascade='all, delete-orphan')
 
     @property
     def password(self):
@@ -29,5 +35,6 @@ class User(db.Model, UserMixin):
         return {
             'id': self.id,
             'username': self.username,
-            'email': self.email
+            'email': self.email,
+            'timezone': self.timezone
         }
